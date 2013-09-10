@@ -1,0 +1,3 @@
+[submodule "dispersy"]
+	path = dispersy
+	url = https://github.com/boudewijn-tribler/dispersy.git
