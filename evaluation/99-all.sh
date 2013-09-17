@@ -1,34 +1,23 @@
 #!/usr/bin/env bash                                                                                                                                                                                                                                                                                                            
   
+# echo on                                                                                                                                                                                                                                                                                                                      
+set -o verbose
+
 # directory with all the scripts                                                                                                                                                                                                                                                                                               
 EVAL=`dirname $0`
 
 # ARGUMENT $1: directory with all the logs, default '.'
 RESULTDIR=${1:-.}
 
-# source config file
-if [ ! -f "${RESULTDIR}/config" ]; then
-    echo "${RESULTDIR} does not contain config file"
-    exit 1
-fi
-source "${RESULTDIR}/config"
-
 # ARGUMENT $2: database filename, default 'try.db'
-DATABASE=${2:-${FILENAME_PREFIX}try.db}
-if [ -f "${DATABASE}" ]; then
-    echo "${DATABASE} already exists, please remove it if you want to re-evaluate all logs"
-    exit 1
-fi
-
-# echo on
-set -o verbose
+DATABASE=${2:-try.db}
 
 # run all scripts                                                                                                                                                                                                                                                                                                              
 $EVAL/11-parse.py $RESULTDIR log $DATABASE || exit 1
-cat $EVAL/21-graphs.R | sed s:==FILENAME==:$DATABASE: | R --no-save --quiet || echo "FAIL GRAPHS... CONTINUE"
-cat $EVAL/22-experiment-graphs.R | sed s:==FILENAME==:$DATABASE: | R --no-save --quiet || echo "FAIL GRAPHS... CONTINUE"
+cat $EVAL/41-performance-graph.R | sed s:==FILENAME==:$DATABASE: | R --no-save --quiet || echo "FAIL GRAPHS... CONTINUE"
 sqlite3 -separator ' ' $DATABASE "select r.first, r.second FROM last_record l JOIN record r ON r.id = l.record" > edges.txt
 cat $EVAL/42-edges-graph.R | R --no-save --quiet || echo "FAIL GRAPHS... CONTINUE"
+cat $EVAL/walks_per_cand.R
 
 # get stats from database
 sqlite3 -header -separator ' ' $DATABASE "SELECT peer AS source, destination_peer AS target, count(*) AS weight FROM walk_candidate GROUP BY peer, destination_peer" > walks.txt
