@@ -96,11 +96,11 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
     def introduction_strategy(self):
         return self._introduction_strategy
 
-    def scenario_enable_probabilistic_introduction(self):
+    def scenario_enable_local_intro(self):
         # dependencies
         if not (self._scenario_calls["scenario_start"] <= 0):
-            raise RuntimeError("scenario_enable_probabilistic_candidate must be called BEFORE scenario_start")
-        self._introduction_strategy = "probabilistic"
+            raise RuntimeError("scenario_enable_local_intro must be called BEFORE scenario_start")
+        self._introduction_strategy = "local-intro"
 
     def scenario_enable_deterministic_introduction(self):
         # dependencies

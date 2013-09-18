@@ -734,11 +734,14 @@ class BarterCommunity(Community):
     def dispersy_get_introduce_candidate(self, exclude_candidate=None):
         method = self._scenario_script.introduction_strategy
 
-        if method == "deterministic":
-            raise NotImplementedError("method [%s] is not implemented" % method)
+        if method == "local-intro":
+            def intersect(a, b):
+                 return list(set(a) & set(b))
 
-        if method == "probabilistic":
-            raise NotImplementedError("method [%s] is not implemented" % method)
+            candidates=list(self.dispersy_yield_verified_candidates())
+            ver = [peer_number for peer_number, in self._database.execute(u"SELECT member FROM book")]
+
+            return intersect(ver,candidates)
 
         if method == "dispersy":
             return super(BarterCommunity, self).dispersy_get_introduce_candidate(exclude_candidate)

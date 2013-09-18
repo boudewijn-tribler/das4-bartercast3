@@ -27,7 +27,7 @@ for (j in tim){
 	ned<-rep(0,500)
 	for (i in 1:500){
 
-		l<-which(walk$peer==i & walk$when_received<=(j*5+min(walk$when_received)))
+		l<-which(walk$viewId ==i & walk$when_received<=(j*5+min(walk$when_received)))
 		numedge[i]<-length(l)
 
 		}
@@ -59,10 +59,7 @@ K1 <- read.table("walks.txt",header = TRUE, sep = "",
 no_walks<-c()
 for(i in 1:no_Nodes){
 	l<-which(K1$toId==i)
-	 no_walks[i]<-sum(K1$w[l])
-
-	
-}
+	 no_walks[i]<-sum(K1$w[l])}
 
 
 postscript(file="walks_per_candidate.eps")
@@ -76,16 +73,12 @@ dev.off()
 
 
  
-edglist1<-cbind((walk$fist+1),(walk$second+1))
-G1 <- graph.edgelist(edglist1,directed=TRUE)
-G1<-simplify(G1,remove.loops=TRUE,remove.multiple=TRUE)
-deg<-degree(G1, v=V(G1), mode = c("all"), loops = FALSE, normalized = FALSE) 
 
+l<-order(deg,decreasing=FALSE)
 
-
-postscript(file="walks_per_candidate.eps")
+postscript(file="walks_vs_degree.eps")
 #par(cex.lab=1.6,cex.axis=1.3)
-p<-plot(no_walks,deg,ylab="no of walks", xlab="degree",main="Dispersy 1 h")
+p<-plot(deg[l], no_walks[l],ylab="no of walks", xlab="degree",main="Dispersy 1 h")
 #ylim=c(0,2800),xlim=c(0,length(n_edg2[1,])),
 print(p)
 dev.off()
