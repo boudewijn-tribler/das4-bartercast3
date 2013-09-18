@@ -1,8 +1,8 @@
-#compute the # of records that each candidate has at each time step
+#compute the # of records that each candidate has at each time stepsource('~/Desktop/walks_per_cand.R', chdir = TRUE)
 
 walk<-read.table("received_record.txt",header=TRUE, col.names=c("viewId","when_received", "when_created", "first", "second", "global_time", "cycle", "upload_first_to_second", "upload_second_to_first", "avg_timestamp"))	
 
-
+library(igraph)
 edglist1<-cbind((walk$first+1),(walk$second+1))
 G1 <- graph.edgelist(edglist1,directed=TRUE)
 G1<-simplify(G1,remove.loops=TRUE,remove.multiple=TRUE)
@@ -40,7 +40,7 @@ for (j in tim){
 #numedge<-read.table("records_per_candidate.txt")			
 no_Nodes<-length(n_edg2[,1])
 
-postscript(file="/var/scratch/dgkorou/records_per_deter_candidate.eps")
+postscript(file="records_per_candidate.eps")
 #par(cex.lab=1.6,cex.axis=1.3)
 p<-plot(unlist(n_edg2[1,]),ylim=c(0,2800),xlim=c(0,length(n_edg2[1,])),ylab="no of records", xlab="time step",main="Dispersy 1 h")
 for (i in 2:(no_Nodes-1)){
@@ -65,7 +65,7 @@ for(i in 1:no_Nodes){
 }
 
 
-postscript(file="/var/scratch/dgkorou/walks_per_deter_candidate.eps")
+postscript(file="walks_per_candidate.eps")
 #par(cex.lab=1.6,cex.axis=1.3)
 p<-plot(no_walks,ylab="no of walks", xlab="candidate Id",main="Dispersy 1 h")
 #ylim=c(0,2800),xlim=c(0,length(n_edg2[1,])),
@@ -83,7 +83,7 @@ deg<-degree(G1, v=V(G1), mode = c("all"), loops = FALSE, normalized = FALSE)
 
 
 
-postscript(file="/var/scratch/dgkorou/walks_per_deter_candidate.eps")
+postscript(file="walks_per_candidate.eps")
 #par(cex.lab=1.6,cex.axis=1.3)
 p<-plot(no_walks,deg,ylab="no of walks", xlab="degree",main="Dispersy 1 h")
 #ylim=c(0,2800),xlim=c(0,length(n_edg2[1,])),
