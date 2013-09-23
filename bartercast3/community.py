@@ -227,6 +227,15 @@ class BarterCommunity(Community):
             yield 60.0
 
     @property
+    def dispersy_sync_skip_enable(self):
+        return False #_sync_skip_
+
+    @property
+    def dispersy_sync_cache_enable(self):
+        return False #_cache_enable_
+
+
+    @property
     def database(self):
         return self._database
 
