@@ -749,8 +749,18 @@ class BarterCommunity(Community):
 
             candidates=list(self.dispersy_yield_verified_candidates())
             ver = [peer_number for peer_number, in self._database.execute(u"SELECT member FROM book")]
-
-            return intersect(ver,candidates)
+            print "peers 1 hop dist" ,ver
+            print "the list of candidates is :", intersect(ver,candidates)
+            list_cand= intersect(ver,candidates)
+            
+            if list_cand:
+               index=randint(0,(len(list_cand)-1))
+               candidate = list_cand[index]
+               return candidate
+            else:
+               #except ValueError:
+               print "Could not introduce a candidate."
+               return None
 
         if method == "dispersy":
             return super(BarterCommunity, self).dispersy_get_introduce_candidate(exclude_candidate)
@@ -777,12 +787,13 @@ class BarterCommunity(Community):
             result = super(BarterCommunity, self).dispersy_get_walk_candidate()
 
         # introduction based on the locally compute scores
-        if method == "follow-introduction":
+        if self._scenario_script.enable_following:
             #if walk_type="with_restarts":
 
             # with teleportation probability 0.2
             if random() < .2:
-                method = "probabilistic"
+                pass
+
 
             else:
                 candidates = [(candidate.last_intro, candidate)
@@ -799,9 +810,9 @@ class BarterCommunity(Community):
                 #    if ttl>7:
                 #        method = "probabilistic"
 
-                 #   else:
+                #   else:
                 #        candidates = [(candidate.last_intro, candidate) for candidate in self._candidates.itervalues() if candidate.is_eligible_for_walk(now)]
-            #           if candidates:
+                #           if candidates:
                 #               ttl<-ttl+1
                 #               candidates.sort()
                 #               yield candidates[-1]
