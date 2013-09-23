@@ -46,6 +46,8 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
         self._candidate_strategy = "dispersy"
         self._introduction_strategy = "dispersy"
         self._enable_hill_climbing = True # default is enabled
+        self._enable_following = False # default is disable
+
 
     @property
     def enable_wait_for_wan_address(self):
@@ -108,11 +110,16 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
             raise RuntimeError("scenario_enable_deterministic_candidate must be called BEFORE scenario_start")
         self._introduction_strategy = "deterministic"
 
-    def scenario_enable_follow_introduction(self):
+    def scenario_enable_following(self):
         # dependencies
         if not (self._scenario_calls["scenario_start"] <= 0):
             raise RuntimeError("scenario_enable_follow_introduction must be called BEFORE scenario_start")
-        self._candidate_strategy = "follow-introduction"
+        self._enable_following = True
+
+    @property
+    def enable_following(self):
+        return self._enable_following
+
 
     @property
     def enable_hill_climbing(self):
