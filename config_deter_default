@@ -54,13 +54,15 @@ ZEROLOGGERCONF="`pwd`/zerologger.conf"
 # use either enable_probabilistic_introduction or enable_deterministic_introduction
 #@0:0 enable_probabilistic_introduction
 #@0:0 enable_deterministic_introduction
-@0:0 enable_follow_introduction
+#@0:0 enable_following
+#@0:0 enable_local_intro
+
 
 # use either enable_top_n_edge or enable_top_n_vertex
 #@0:0 enable_top_n_edge 250
 #@0:0 enable_top_n_vertex 250 distribute
 #@0:0 enable_top_n_vertex 250 gather
-@0:0 enable_top_n_vertex 250 both
+#@0:0 enable_top_n_vertex 250 both
 
 @0:0 predefined_identities traces/500peers.db
 @0:0 start

@@ -164,10 +164,25 @@ class BarterCommunity(Community):
             if strategy[0] == "enable_top_n_vertex":
                 self.enable_top_n_vertex(strategy[1], strategy[2], strategy[3])
 
+
+    @property                                       
+    def dispersy_sync_bloom_filter_error_rate(self):
+        return 0.2
+
+    def dispersy_claim_sync_bloom_filter(self, request_cache):
+       sync = self.dispersy_sync_bloom_filter_strategy()
+       if sync:
+           time_low, time_high, modulo, offset, bloom_filter = sync
+           self.log("sync-bloom", time_low=time_low,time_high=time_high, modulo=modulo, offset=offset,prefix=bloom_filter.prefix, binary=bloom_filter.bytes, functions=bloom_filter.functions)
+       else:
+           self.log("sync-bloom", time_low=-1, time_high=-1, modulo=-1,offset=-1, prefix=-1, binary="", functions=-1)
+       return sync
+    
+
     def _periodically_compute_score(self):
         # who am I?
         self.my_member.database_id
-        method="global_rep"
+        method="local_rep"
 
         yield 5.0
         while True:
@@ -179,24 +194,32 @@ class BarterCommunity(Community):
                         self.log("Computation of Reputation... Phase 1: accessing the database ")
                         node = self.my_member.database_id
                         ver = [peer_number for peer_number, in self._database.execute(u"SELECT member FROM book")]
+                        weights1 = [peer_number for peer_number, in self._database.execute(u"SELECT download FROM book")]
+
                         ver2 = [peer_number for peer_number, in self._database.execute(u"SELECT first_member FROM record")]
                         ver3 = [peer_number for peer_number, in self._database.execute(u"SELECT second_member FROM record")]
                         self.log("Computation of Reputation... Phase 2: constructing the graph", count=len(ver))
                         ed = [(node, peer_number) for peer_number in ver]
                         ed2 = zip(ver2, ver3) #[(peer_number1, peer_number2) for peer_number1, peer_number2 in zip(ver2, ver3)]
 
+                        weights2 = [peer_number for peer_number, in self._database.execute(u"SELECT second_upload FROM record")]
+                        weightsa = weights1 + weights2
+                  
                         g = Graph()
                         maxid=max(max(ver+ver2+ver3),node)
 
                         g.add_vertices(maxid+1)
                         g.add_edges(ed+ed2)
                         g.vs["id"]=range(maxid+1)
-
-                        g=g.simplify()
+                        g.es["weights"]=weightsa
+                        
+                        #g=g.simplify()
+                        multi_edges=g.es.is_multiple()
+                        g.es[multi_edges].delete()
                         clust = g.clusters(mode='weak')
                         lcc = clust.giant()
                         self.log("Computation of Reputation... Phase 3: computing the Reputations", count=len(lcc.es), len_ed=len(ed), len_ed2=len(ed2))
-                        score=lcc.personalized_pagerank( directed=True, damping=0.85, reset_vertices=node, weights=None) #arpack_options=None)
+                        score=lcc.personalized_pagerank(directed=True, damping=0.7, reset_vertices=node, weights=g.es["weights"]) #arpack_options=None)
                         self.log("Computation of Reputation... Phase 4: end")
 
                         self._scores=dict(zip(lcc.vs["id"],score))
@@ -208,7 +231,7 @@ class BarterCommunity(Community):
                         node = self.my_member.database_id
 
                         ver = [peer_number for peer_number, in self._database.execute(u"SELECT member FROM book")]
-                        weights = [peer_number for peer_number, in self._database.execute(u"SELECT upload_second_to_first FROM book")]
+                        weights = [peer_number for peer_number, in self._database.execute(u"SELECT download FROM book")]
                         self.log("Computation of Reputation... Phase 2: computing the score", count=len(ver))
 
                         # score=weights
@@ -225,15 +248,6 @@ class BarterCommunity(Community):
 
             # wait 60 seconds
             yield 60.0
-
-    @property
-    def dispersy_sync_skip_enable(self):
-        return False #_sync_skip_
-
-    @property
-    def dispersy_sync_cache_enable(self):
-        return False #_cache_enable_
-
 
     @property
     def database(self):

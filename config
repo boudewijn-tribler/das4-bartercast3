@@ -45,12 +45,14 @@ ZEROLOGGERCONF="`pwd`/zerologger.conf"
 # disable the hill climbing (no hill climbing means no new record creation)
 @0:0 disable_hill_climbing
 
+#@0:0 enable_following
+
 # use either enable_probabilistic_candidate or enable_deterministic_candidate
 #@0:0 enable_probabilistic_candidate
-#@0:0 enable_deterministic_candidate
+@0:0 enable_deterministic_candidate
 
 # use either local_introduction or enable_deterministic_introduction
-@0:0 enable_local_intro
+#@0:0 enable_local_intro
 #@0:0 enable_deterministic_introduction
 
 # use either enable_top_n_edge or enable_top_n_vertex

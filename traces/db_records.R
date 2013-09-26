@@ -21,7 +21,7 @@ global_time<-c()
 cycle<-c()
 effort<-c()
 for (i in 1:ecount(sf)){
-	global_time<-cbind(global_time,(664+(2*i)))
+	global_time<-cbind(global_time,(3+i))
 	cycle<-cbind(cycle,998+i)
 	}
 global_time<-as.vector(global_time)
