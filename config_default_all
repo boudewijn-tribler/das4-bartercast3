@@ -6,7 +6,7 @@ export LD_LIBRARY_PATH=/home/pbschoon/3rd-party/lib
 
 # amount of time to schedule the DAS4 ("MM:SS" or "HH:MM:SS")
 # the scenario should end before this time is over
-RUNTIME="30:0"
+RUNTIME="15:0"
 # number of DAS4 nodes to claim
 HOSTS=10
 
@@ -64,17 +64,17 @@ ZEROLOGGERCONF="`pwd`/zerologger.conf"
 @0:0 predefined_identities traces/500peers.db
 @0:0 start
 @0:0 predefined_books traces/500peers.db
-@0:0 predefined_direct_records traces/500peers.db
+@5:0 predefined_direct_records traces/500peers.db
 
 
 #Dimitra: dispersy time that I have to change when I set a runtime duration
 @0:0 share_identities
 @0:0 share_synchronize
-@25:0 end
+@8:0 end
 
 # set peer activity
 @0:0 upload_activity 1024 1 4
-@5:0 upload_activity 2048 1 4 {0-99}
+@2:0 upload_activity 2048 1 4 {0-99}
 
 # start peer when it comes online
 #@0:0 expon_churn 300 300

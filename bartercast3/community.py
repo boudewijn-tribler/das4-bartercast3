@@ -167,8 +167,11 @@ class BarterCommunity(Community):
 
     @property                                       
     def dispersy_sync_bloom_filter_error_rate(self):
-        return 0.2
-
+        return 0.05
+    @property
+    def dispersy_sync_bloom_filter_bits(self):
+        default = (1500 - 60 - 8 - 51 - self._my_member.signature_length - 21 - 30) * 8
+        return default * 2
     def dispersy_claim_sync_bloom_filter(self, request_cache):
        sync = self.dispersy_sync_bloom_filter_strategy()
        if sync:
@@ -178,6 +181,10 @@ class BarterCommunity(Community):
            self.log("sync-bloom", time_low=-1, time_high=-1, modulo=-1,offset=-1, prefix=-1, binary="", functions=-1)
        return sync
     
+    def dispersy_take_step(self, allow_sync):
+       if not allow_sync:
+          logger.warning("allow_sync was False, forcing True")
+       return self._dispersy.take_step(self, True)
 
     def _periodically_compute_score(self):
         # who am I?
@@ -881,6 +888,10 @@ class BarterCommunity(Community):
                 if candidate:
                     result = candidate
                     break
+
+        self.log("available-candidates", 
+                 verified=[str(candidate) for candidate in self.dispersy_yield_verified_candidates()], 
+                 unverified=[str(candidate) for candidate in self.dispersy_yield_candidates()])
 
         if result is None:
             self.log("walk-candidate", strategy=method, lan_address=None, wan_address=None)
