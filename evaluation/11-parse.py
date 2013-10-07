@@ -67,7 +67,7 @@ CREATE TABLE walk_candidate (
         self.mapto(self.walk_candidate, "walk-candidate")
 
     def start_parser(self, filename):
-        super(EffortScenarioParser, self).start_parser(filename)
+        super(BarterScenarioParser, self).start_parser(filename)
 
         # LAST_WALK contains the rowid of the last walk performed
         self.last_walk = 0
