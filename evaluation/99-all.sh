@@ -21,4 +21,4 @@ cat $EVAL/walks_per_cand.R
 
 # get stats from database
 sqlite3 -header -separator ' ' $DATABASE "SELECT peer AS source, destination_peer AS target, count(*) AS weight FROM walk_candidate GROUP BY peer, destination_peer" > walks.txt
-sqlite3 -header -separator ' ' $DATABASE "SELECT p.peer, p.timestamp AS when_received, p.timestamp AS when_created, r.first, r.second, r.global_time, r.cycle, r.upload_first_to_second, r.upload_second_to_first, r.avg_timestamp FROM received_record p JOIN record r ON r.id = p.record ORDER BY p.peer" > received_record.txt
+sqlite3 -header -separator ' ' $DATABASE "SELECT p.peer, w.timestep, p.timestamp AS when_received, p.timestamp AS when_created, r.first, r.second, r.global_time, r.cycle, r.upload_first_to_second, r.upload_second_to_first, r.avg_timestamp FROM received_record p JOIN record r ON r.id = p.record JOIN walk_candidate w ON w.id = p.walk ORDER BY p.peer" > received_record.txt
