@@ -36,14 +36,21 @@ CREATE TABLE record (
 CREATE TABLE last_record (record INTEGER PRIMARY KEY REFERENCES record(id));
 
 -- received_record links all records that each individual peer has updated/received
-CREATE TABLE received_record (record INTEGER, peer INTEGER, timestamp FLOAT, PRIMARY KEY (record, peer));
+CREATE TABLE received_record (
+ record INTEGER,                        -- the rowid of the received record
+ peer INTEGER,                          -- the rowid of the peer who received the record
+ timestamp FLOAT,                       -- when the peer received the record
+ walk INTEGER,                          -- the rowid of the most recent walk that the peer did
+ PRIMARY KEY (record, peer));
 
 -- every candidate contacted during walk
 CREATE TABLE walk_candidate (
  id INTEGER PRIMARY KEY AUTOINCREMENT,
  peer INTEGER,                          -- the peer that initiated contact
  destination_peer INTEGER,              -- the peer that is contacted
- timestamp FLOAT);                      -- when the contact occurred
+ timestamp FLOAT,                       -- when the contact occurred
+ timestep INTEGER                       -- the nth walk performed by the peer
+);
 """)
 
         # self.cur.execute(u"CREATE TABLE edge (id INTEGER PRIMARY KEY AUTOINCREMENT, cycle INTEGER, peer INTEGER, peer1 INTEGER, peer2 INTEGER)")
@@ -59,8 +66,15 @@ CREATE TABLE walk_candidate (
         # self.mapto(self.signature_timeout, "signature-timeout")
         self.mapto(self.walk_candidate, "walk-candidate")
 
-    # def start_parser(self, filename):
-    #     super(EffortScenarioParser, self).start_parser(filename)
+    def start_parser(self, filename):
+        super(EffortScenarioParser, self).start_parser(filename)
+
+        # LAST_WALK contains the rowid of the last walk performed
+        self.last_walk = 0
+
+        # TIMESTEP is the walk number, i.e. this value is incremented by one for each walk performed
+        self.timestep = 0
+
     #     self.my_member = ""
     #     self.my_class = ""
     #     self.load_stamp = 0.0
@@ -135,12 +149,14 @@ CREATE TABLE walk_candidate (
 
         id_, = self.cur.execute(u"SELECT id FROM record WHERE first = ? AND second = ? AND global_time = ?",
                                 (first_id, second_id, global_time)).next()
-        self.cur.execute(u"INSERT OR IGNORE INTO received_record (record, peer, timestamp) VALUES (?, ?, ?)",
-                         (id_, self.peer_id, stamp))
+        self.cur.execute(u"INSERT OR IGNORE INTO received_record (record, peer, timestamp, walk) VALUES (?, ?, ?, ?)",
+                         (id_, self.peer_id, stamp, self.last_walk))
 
     def walk_candidate(self, stamp, name, lan_address, **kargs):
-        self.cur.execute(u"INSERT INTO walk_candidate (peer, destination_peer, timestamp) VALUES (?, ?, ?)",
-                         (self.peer_id, self.get_peer_id_from_lan_address(lan_address, or_create=True), stamp))
+        self.timestep += 1
+        self.cur.execute(u"INSERT INTO walk_candidate (peer, destination_peer, timestamp, timestep) VALUES (?, ?, ?, ?)",
+                         (self.peer_id, self.get_peer_id_from_lan_address(lan_address, or_create=True), stamp, self.timestep))
+        self.last_walk = self.cur.lastrowid
 
     def finish(self):
         if self.last_record:

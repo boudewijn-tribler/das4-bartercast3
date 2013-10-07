@@ -55,6 +55,7 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
     def my_member_security(self):
         # return u"NID_sect233k1"
         # NID_secp224r1 is approximately 2.5 times faster than NID_sect233k1
+        # NID_secp224r1 has 56 byte signatures
         return u"NID_secp224r1"
 
     @property
