@@ -170,7 +170,7 @@ class BarterCommunity(Community):
         return 0.05
     @property
     def dispersy_sync_bloom_filter_bits(self):
-        default = (1500 - 60 - 8 - 51 - self._my_member.signature_length - 21 - 30) * 8
+        default = 3*(1500 - 60 - 8 - 51 - self._my_member.signature_length - 21 - 30) * 8
         return default * 2
     def dispersy_claim_sync_bloom_filter(self, request_cache):
        sync = self.dispersy_sync_bloom_filter_strategy()
@@ -267,14 +267,14 @@ class BarterCommunity(Community):
     #this decides the max size of data responded after being contact on a RW
     @property
     def dispersy_sync_response_limit(self):
-        return 5 * 1024 *10 #at most 5kB returned
+        return 5 * 1024 *10 #000 #at most 5kB returned
 
     @property
     def dispersy_sync_bloom_filter_strategy(self):
         return self._dispersy_claim_sync_bloom_filter_modulo
 
     def initiate_meta_messages(self):
-        return [Message(self, u"barter-record", DoubleMemberAuthentication(allow_signature_func=self.allow_signature_request, encoding="bin"), PublicResolution(), LastSyncDistribution(synchronization_direction=u"RANDOM", priority=128, history_size=1), CommunityDestination(node_count=10), BarterRecordPayload(), self.check_barter_record, self.on_barter_record, batch=BatchConfiguration(max_window=4.5)),
+        return [Message(self, u"barter-record", DoubleMemberAuthentication(allow_signature_func=self.allow_signature_request, encoding="bin"), PublicResolution(), LastSyncDistribution(synchronization_direction=u"RANDOM", priority=128, history_size=1), CommunityDestination(node_count=10), BarterRecordPayload(), self.check_barter_record, self.on_barter_record),
                 Message(self, u"ping", NoAuthentication(), PublicResolution(), DirectDistribution(), CandidateDestination(), PingPayload(), self.check_ping, self.on_ping),
                 Message(self, u"pong", NoAuthentication(), PublicResolution(), DirectDistribution(), CandidateDestination(), PongPayload(), self.check_pong, self.on_pong),
                 Message(self, u"upload", NoAuthentication(), PublicResolution(), DirectDistribution(), CandidateDestination(), UploadPayload(), self.check_upload, self.on_upload),
@@ -788,6 +788,76 @@ class BarterCommunity(Community):
 
         raise RuntimeError("unknown method [%s]" % method)
 
+
+    def dimitra_dispersy_get_walk_candidate(self):
+        """
+        Returns a candidate from either the walk, stumble or intro category which is eligible for walking.
+        Selects a category based on predifined probabilities.
+        """
+        # 13/02/12 Boudewijn: normal peers can not be visited multiple times within 30 seconds,
+        # bootstrap peers can not be visited multiple times within 55 seconds.  this is handled by
+        # the Candidate.is_eligible_for_walk(...) method
+
+        assert all(not sock_address in self._candidates for sock_address in self._dispersy._bootstrap_candidates.iterkeys()), "none of the bootstrap candidates may be in self._candidates"
+
+        from sys import maxint
+
+        now = time()
+        categories = [(maxint, None), (maxint, None), (maxint, None)]
+        category_sizes = [0, 0, 0]
+
+        for candidate in self._candidates.itervalues():
+            if candidate.is_eligible_for_walk(now):
+                category = candidate.get_category(now)
+                if category == u"walk":
+                    categories[0] = min(categories[0], (candidate.last_walk, candidate))
+                    category_sizes[0] += 1
+                elif category == u"stumble":
+                    categories[1] = min(categories[1], (candidate.last_stumble, candidate))
+                    category_sizes[1] += 1
+                elif category == u"intro":
+                    categories[2] = min(categories[2], (candidate.last_intro, candidate))
+                    category_sizes[2] += 1
+
+        walk, stumble, intro = [candidate for _, candidate in categories]
+        while walk or stumble or intro:
+            r = random()
+
+            # 13/02/12 Boudewijn: we decrease the 1% chance to contact a bootstrap peer to .5%
+            if r <= .4975:  # ~50%
+                if walk:
+                    logger.debug("returning [%2d:%2d:%2d walk   ] %s", category_sizes[0] , category_sizes[1], category_sizes[2], walk)
+                    return walk
+
+            elif r <= .995:  # ~50%
+                if stumble or intro:
+                    while True:
+                        if random() <= .5:
+                            if stumble:
+                                logger.debug("returning [%2d:%2d:%2d stumble] %s", category_sizes[0] , category_sizes[1], category_sizes[2], stumble)
+                                return stumble
+
+                        else:
+                            if intro:
+                                logger.debug("returning [%2d:%2d:%2d intro  ] %s", category_sizes[0] , category_sizes[1], category_sizes[2], intro)
+                                return intro
+
+            # else:  # ~.5%
+            #     candidate = self._bootstrap_candidates.next()
+            #     if candidate:
+            #         logger.debug("returning [%2d:%2d:%2d bootstr] %s", category_sizes[0] , category_sizes[1], category_sizes[2], candidate)
+            #         return candidate
+
+        bootstrap_candidates = list(self._iter_bootstrap(once=True))
+        shuffle(bootstrap_candidates)
+        for candidate in bootstrap_candidates:
+            if candidate:
+                logger.debug("returning [%2d:%2d:%2d bootstr] %s", category_sizes[0] , category_sizes[1], category_sizes[2], candidate)
+                return candidate
+
+        logger.debug("no candidates or bootstrap candidates available")
+        return None
+
     def dispersy_get_walk_candidate(self):
         """
         Return candidate to walk to.
@@ -800,12 +870,12 @@ class BarterCommunity(Community):
         now = time()
         result = None
         method = self._scenario_script.candidate_strategy
-         #walk_type="with_restarts"
+        #walk_type="with_restarts"
 
         # use the default Dispersy strategy if neither enable_probabilistic_candidate nor
         # enable_deterministic_candidate is chosen
         if method == "dispersy":
-            result = super(BarterCommunity, self).dispersy_get_walk_candidate()
+            result = self.dimitra_dispersy_get_walk_candidate()
 
         # introduction based on the locally compute scores
         if self._scenario_script.enable_following:
