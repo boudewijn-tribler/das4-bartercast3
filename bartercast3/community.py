@@ -195,9 +195,9 @@ class BarterCommunity(Community):
        return sync
     
     def dispersy_take_step(self, allow_sync):
-       if not allow_sync:
-          logger.warning("allow_sync was False, forcing True")
-       return self._dispersy.take_step(self, True)
+       # if not allow_sync:
+       #    logger.warning("allow_sync was False, forcing True")
+       return self._dispersy.take_step(self, self._scenario_script.enable_sync)
 
     def _periodically_compute_score(self):
         # who am I?
