@@ -47,6 +47,7 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
         self._introduction_strategy = "dispersy"
         self._enable_hill_climbing = True # default is enabled
         self._enable_following = False # default is disable
+        self._enable_sync = True # default is enabled
 
     @property
     def enable_wait_for_wan_address(self):
@@ -77,6 +78,16 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
 
     def log(self, _message, **kargs):
         bz2log("log", _message, **kargs)
+
+    @property
+    def enable_sync(self):
+        return self._enable_sync
+
+    def scenario_enable_sync(self):
+        self._enable_sync = True
+
+    def scenario_disable_sync(self):
+        self._enable_sync = False
 
     @property
     def candidate_strategy(self):
