@@ -24,7 +24,7 @@ from dispersy.destination import CommunityDestination, CandidateDestination
 from dispersy.distribution import LastSyncDistribution, DirectDistribution, SyncDistribution
 from dispersy.member import Member
 from dispersy.message import BatchConfiguration, Message, DropMessage, DelayMessageByProof
-from dispersy.requestcache import Cache
+from dispersy.requestcache import NumberCache
 from dispersy.resolution import PublicResolution, LinearResolution
 from dispersy.logger import get_logger
 logger = get_logger(__name__)
@@ -51,14 +51,27 @@ def bitcount(l):
         l >>= 1
     return c
 
-class PingCache(Cache):
-    cleanup_delay = 0.0
-    timeout_delay = 10.0
+class PingCache(NumberCache):
+
+    @staticmethod
+    def create_identifier(number):
+        assert isinstance(number, (int, long)), type(number)
+        return u"request-cache:ping:%d" % (number,)
+
+    @classmethod
+    def create_identifier_from_message(cls, message):
+        assert isinstance(message, Message.Implementation), type(message)
+        return cls.create_identifier(message.payload.identifier)
 
     def __init__(self, community, candidate, member):
+        super(PingCache, self).__init__(community.request_cache)
         self.community = community
         self.candidate = candidate
         self.member = member
+
+    @property
+    def cleanup_delay(self):
+        return 0.0
 
     def on_timeout(self):
         self.community.remove_from_slope(self.member)
@@ -624,9 +637,8 @@ class BarterCommunity(Community):
     def _ping(self, candidate, member):
         meta = self._meta_messages[u"ping"]
         while True:
-            cache = PingCache(self, candidate, member)
-            identifier = self._dispersy.request_cache.claim(cache)
-            ping = meta.impl(distribution=(self._global_time,), destination=(candidate,), payload=(identifier, self._my_member))
+            cache = self._request_cache.add(PingCache(self, candidate, member))
+            ping = meta.impl(distribution=(self._global_time,), destination=(candidate,), payload=(cache.number, self._my_member))
             self._dispersy.store_update_forward([ping], False, False, True)
 
             yield 50.0
@@ -648,7 +660,7 @@ class BarterCommunity(Community):
 
     def check_pong(self, messages):
         for message in messages:
-            if not self._dispersy.request_cache.has(message.payload.identifier, PingCache):
+            if not self._request_cache.has(PingCache.create_identifier_from_message(message)):
                 yield DropMessage(message, "invalid response identifier")
                 continue
 
@@ -657,7 +669,7 @@ class BarterCommunity(Community):
     def on_pong(self, messages):
         cycle = int(time() / CYCLE_SIZE)
         for message in messages:
-            self._dispersy.request_cache.pop(message.payload.identifier, PingCache)
+            self._request_cache.pop(PingCache.create_identifier_from_message(message))
             book = self.get_book(message.payload.member)
             if book.cycle < cycle:
                 book.cycle = cycle
