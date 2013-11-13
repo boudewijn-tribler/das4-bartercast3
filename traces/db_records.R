@@ -21,7 +21,7 @@ global_time<-c()
 cycle<-c()
 effort<-c()
 for (i in 1:ecount(sf)){
-	global_time<-cbind(global_time,(3+i))
+	global_time<-cbind(global_time,(664+(2*i)))
 	cycle<-cbind(cycle,998+i)
 	}
 global_time<-as.vector(global_time)
@@ -37,8 +37,8 @@ t[,2]<-as.integer(t[,2])
 tabl<-cbind(t,global_time,cycle,effort,E(sf)$weights1,E(sf)$weights2)
 
 colnames(tabl)<-c("first_peer_number","second_peer_number","global_time","cycle","effort","upload_first_to_second","upload_second_to_first")
-tabl[,1]<-tabl[,1]-1
-tabl[,2]<-tabl[,2]-1
+#tabl[,1]<-tabl[,1]-1
+#tabl[,2]<-tabl[,2]-1
 
 tabl<-as.data.frame(tabl)
 tabl[,1]<-as.integer(tabl[,1])

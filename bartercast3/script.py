@@ -268,6 +268,7 @@ WHERE b.second_peer_number = ?""", (peer_number,)))
         must_go_offline = False
         community = self.has_community()
         if not community:
+            must_go_offline = True
             self.scenario_churn("online")
             community = self.has_community()
             assert community
@@ -338,6 +339,7 @@ JOIN predefined_identities s ON s.peer_number = r.second_peer_number""" + where)
         must_go_offline = False
         community = self.has_community()
         if not community:
+            must_go_offline = True
             self.scenario_churn("online")
             community = self.has_community()
             assert community
