@@ -170,6 +170,48 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
             raise RuntimeError("scenario_enable_top_n_vertex requires METHOD to be: 'distribute', 'gather', or 'both'")
         self._sync_strategy = ("enable_top_n_vertex", int(n), distribute, gather)
 
+    def scenario_upload_activity_from_database(self, filepath, begin="0", end="0", multiplier="1.0"):
+        db = sqlite3.connect(path.join(self._kargs["localcodedir"], filepath))
+        cur = db.cursor()
+        maxpeerid1, maxpeerid2, mintime, maxtime = next(cur.execute(u"SELECT MAX(interactions.first_peer_number), MAX(interactions.second_peer_number), MIN(interactions.time), MAX(interactions.time) FROM interactions"))
+        maxpeerid = max(maxpeerid1, maxpeerid2)
+
+        begin = int(begin)
+        end = int(end) if int(end) > 0 else maxtime
+        multiplier = float(multiplier)
+        peernumber = int(self._kargs["peernumber"]) % maxpeerid
+        startstamp = float(self._kargs["startstamp"])
+
+        activity = [((timestamp - mintime - begin) * multiplier + startstamp, peer2, upload)
+                    for timestamp, peer2, upload
+                    in cur.execute(u"SELECT time, second_peer_number, upload_first_to_second FROM interactions WHERE first_peer_number = ?",
+                                   (peernumber,))]
+        if activity:
+            self._dispersy.callback.register(self._scenario_upload_activity_from_database_helper, (activity,))
+        else:
+            self.log("scenario-upload-activity", state="fail", reason="no activity found in database")
+
+    def _scenario_upload_activity_from_database_helper(self, activity):
+        for timestamp, destination_peer, upload_activity in activity:
+            delay = max(0.0, timestamp - time.time())
+            logger.debug("will upload %d bytes to peer %d in %.2f seconds", upload_activity, destination_peer, timestamp)
+            yield delay
+
+            community = self.has_community()
+            if community:
+                peer = self.get_peer_from_number(destination_peer)
+                candidate = community.get_candidate(peer.lan_address)
+                if not candidate:
+                    # did not yet meet this peer
+                    lan = (peer.lan_host, peer.lan_port)
+                    wan = (peer.wan_host, peer.wan_port)
+                    candidate = community.create_candidate(lan, False, lan, wan, u"unknown")
+
+                self._do_upload_activity(candidate, upload_activity)
+
+            else:
+                self.log("scenario-upload-activity", state="fail", reason="can not upload when offline")
+
     def scenario_upload_activity(self, value, interval, slots):
         """
         Set how active the peer is.  VALUE bytes in upload are divided amount SLOTS peers every
@@ -190,17 +232,29 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
 
                     upload_per_candidate = int(self._upload_activity.value / len(candidates))
                     for candidate in candidates:
-                        peer = self.get_peer_from_candidate(candidate)
-                        member = self._dispersy.get_member(peer.public_key)
-                        logger.debug("emulating activity with %s.  adding %d bytes to download", member, upload_per_candidate)
+                        self._do_upload_activity(candidate, upload_per_candidate)
 
-                        # local book keeping
-                        book = community.get_book(member)
-                        book.download += upload_per_candidate
-                        community.try_adding_to_slope(candidate, member)
+            else:
+                self.log("scenario-upload-activity", state="fail", reason="can not upload when offline")
 
-                        # notify the receiving peer that we uploaded something
-                        community.create_upload(upload_per_candidate, candidate)
+    def _do_upload_activity(self, candidate, upload_activity):
+        community = self.has_community()
+        if community:
+            peer = self.get_peer_from_candidate(candidate)
+            member = self._dispersy.get_member(peer.public_key)
+            logger.debug("emulating activity with %s.  adding %d bytes to download", member, upload_activity)
+
+            # local book keeping
+            book = community.get_book(member)
+            book.download += upload_activity
+            community.try_adding_to_slope(candidate, member)
+
+            # notify the receiving peer that we uploaded something
+            self.log("scenario-upload-activity", state="success", destination_peer_number=peer.peer_number, activity=upload_activity)
+            community.create_upload(upload_activity, candidate)
+
+        else:
+            self.log("scenario-upload-activity", state="fail", reason="can not upload when offline")
 
     def scenario_predefined_identities(self, filepath):
         """

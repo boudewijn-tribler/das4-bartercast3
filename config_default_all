@@ -75,6 +75,7 @@ ZEROLOGGERCONF="`pwd`/zerologger.conf"
 @13:0 end
 
 # set peer activity
+#@0:0 upload_activity_from_database FILENAME
 #@0:0 upload_activity 1024 1 4
 #@2:0 upload_activity 2048 1 4 {0-99}
 
