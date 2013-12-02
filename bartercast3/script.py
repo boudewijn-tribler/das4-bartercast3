@@ -203,9 +203,7 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
                 candidate = community.get_candidate(peer.lan_address)
                 if not candidate:
                     # did not yet meet this peer
-                    lan = (peer.lan_host, peer.lan_port)
-                    wan = (peer.wan_host, peer.wan_port)
-                    candidate = community.create_candidate(lan, False, lan, wan, u"unknown")
+                    candidate = community.create_candidate(peer.lan_address, False, peer.lan_address, peer.wan_address, u"unknown")
 
                 self._do_upload_activity(candidate, upload_activity)
 
