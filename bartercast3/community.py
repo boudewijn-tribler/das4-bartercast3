@@ -509,7 +509,7 @@ class BarterCommunity(Community):
                     book.cycle = cycle
                     book.effort.set(cycle * CYCLE_SIZE)
 
-    def create_barter_record(self, second_member):
+    def create_barter_record(self, candidate, second_member):
         """
         Create a dispersy-signature-request that encapsulates an barter-record.
         """
@@ -525,7 +525,7 @@ class BarterCommunity(Community):
                                     # the following parameters are used for debugging only
                                     time(), time(), book.download, book.upload, 0, 0),
                            sign=False)
-        return self.create_dispersy_signature_request(record, self.on_signature_response)
+        return self.create_dispersy_signature_request(candidate, record, self.on_signature_response)
 
     def allow_signature_request(self, message):
         """
@@ -665,7 +665,7 @@ class BarterCommunity(Community):
                     # record_candidate.history.set(now)
 
                     self._dispersy.callback.unregister(record_candidate.callback_id)
-                    self.create_barter_record(winner)
+                    self.create_barter_record(record_candidate.candidate, winner)
 
                 else:
                     logger.debug("c%d  no peers available for record creation (%d peers on slope)", int(now / CYCLE_SIZE), len(self._slope))
