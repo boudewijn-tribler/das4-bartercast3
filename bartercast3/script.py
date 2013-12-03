@@ -174,7 +174,7 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
         db = sqlite3.connect(path.join(self._kargs["localcodedir"], filepath))
         cur = db.cursor()
         maxpeerid1, maxpeerid2, mintime, maxtime = next(cur.execute(u"SELECT MAX(interactions.first_peer_number), MAX(interactions.second_peer_number), MIN(interactions.time), MAX(interactions.time) FROM interactions"))
-        maxpeerid = max(maxpeerid1, maxpeerid2)
+        maxpeerid = int(max(maxpeerid1, maxpeerid2))
 
         begin = int(begin)
         end = int(end) if int(end) > 0 else maxtime
@@ -182,7 +182,7 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
         peernumber = int(self._kargs["peernumber"]) % maxpeerid
         startstamp = float(self._kargs["startstamp"])
 
-        activity = [((timestamp - mintime - begin) * multiplier + startstamp, peer2, upload)
+        activity = [((timestamp - mintime - begin) * multiplier + startstamp, int(peer2), int(upload))
                     for timestamp, peer2, upload
                     in cur.execute(u"SELECT time, second_peer_number, upload_first_to_second FROM interactions WHERE first_peer_number = ?",
                                    (peernumber,))]
