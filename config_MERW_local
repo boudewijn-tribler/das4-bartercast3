@@ -1,0 +1,96 @@
+#!/bin/bash
+
+# paths
+export PYTHONPATH=/home/pbschoon/3rd-party/lib/python2.6/site-packages:/home/pbschoon/3rd-party/lib64/python2.6/site-packages
+export LD_LIBRARY_PATH=/home/pbschoon/3rd-party/lib
+
+# amount of time to schedule the DAS4 ("MM:SS" or "HH:MM:SS")
+# the scenario should end before this time is over
+RUNTIME="120:0"
+# number of DAS4 nodes to claim
+HOSTS=20
+
+# number of processes to run (these will be divided among HOSTS nodes)
+TASKS=500
+
+# will start BATCHSIZE processes every BATCHDELAY seconds
+BATCHSIZE=100
+BATCHDELAY=1
+
+# local script to execute (runs once on each host)
+SCRIPT="node.sh"
+
+# SCRIPT starts: BINARY BINARYPARAMS peer.py DISPERSYPARAMS --kargs DISPERSYKARGS,startstamp=N,scenario=config
+BINARY="python"
+BINARYPARAMS="-O"
+DISPERSYPARAMS="--script bartercast3.script.BarterScenarioScript --profiler"
+DISPERSYKARGSGS=""
+
+# destination directory where results are copied to
+RESULTDIR="/var/scratch/$USER/resultdir_MERW_local"
+#RESULTDIR="/var/scratch/$USER/resultdir_prob_default"
+RSYNCPARAMS="--exclude=sqlite --exclude=logger.conf --exclude=bootstraptribler.txt"
+RSYNCPARAMS=""
+
+# directory that is copied to each DAS4 node (must contain peer.py)
+PYTHONCODEDIR="`pwd`"
+
+LOGGERCONF="`pwd`/logger.conf"
+ZEROLOGGERCONF="`pwd`/zerologger.conf"
+#BOOTSTRAPFILE="`pwd`/bootstraptribler.txt"
+
+# the scenario script
+: <<SCENARIO_AREA
+# start and end the scenario after ... minutes
+
+# disable the hill climbing (no hill climbing means no new record creation)
+@0:0 disable_hill_climbing
+
+# use either enable_probabilistic_candidate or enable_deterministic_candidate
+@0:0 enable_probabilistic_candidate
+#@0:0 enable_deterministic_candidate
+
+# use either enable_probabilistic_introduction or enable_deterministic_introduction
+@0:0 enable_following
+@0:0 enable_local_intro
+
+# compute scores function to use
+@0:0 enable_scores
+#@0:0 enable_random
+
+@0:0 enable_local_rep
+#@0:0 enable_metr
+#@0:0 enable_global_rep 
+
+# use either enable_top_n_edge or enable_top_n_vertex
+#@0:0 enable_top_n_edge 250
+#@0:0 enable_top_n_vertex 250 distribute
+#@0:0 enable_top_n_vertex 250 gather
+#@0:0 enable_top_n_vertex 250 both
+
+
+@0:0 predefined_identities traces/500peers.db
+@0:0 start
+@0:0 predefined_books traces/500peers.db
+#@0:0 disable_sync 
+
+@0:0 predefined_direct_records traces/500peers.db
+#5:0 enable_sync {5}
+
+#Dimitra: dispersy time that I have to change when I set a runtime duration
+@0:0 share_identities
+@0:0 share_synchronize
+@118:0 end
+
+# set peer activity
+#@0:0 upload_activity 1024 1 4
+#@2:0 upload_activity 2048 1 4 {0-99}
+
+# start peer when it comes online
+#@0:0 expon_churn 300 300
+@1:0 churn online
+
+# churn bases on a predefined database
+# @0:1 database_churn behaviortraces/filelist.db 1080000 1440000
+
+SCENARIO_AREA

@@ -48,6 +48,8 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
         self._enable_hill_climbing = True # default is enabled
         self._enable_following = False # default is disable
         self._enable_sync = True # default is enabled
+        self._decision_rw="random"
+        self._rw_strategy="local_rep"
 
     @property
     def enable_wait_for_wan_address(self):
@@ -105,6 +107,50 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
             raise RuntimeError("scenario_enable_deterministic_candidate must be called BEFORE scenario_start")
         self._candidate_strategy = "deterministic"
 
+    @property
+    def decision_rw(self):
+        return self._decision_rw
+
+    def scenario_enable_scores(self):
+        # dependencies
+        if not (self._scenario_calls["scenario_start"] <= 0):
+            raise RuntimeError("scenario_decision_rw must be called BEFORE scenario_start")
+        self._decision_rw = "scores"
+
+    def scenario_enable_random(self):
+        # dependencies
+        if not (self._scenario_calls["scenario_start"] <= 0):
+            raise RuntimeError("scenario_enable_decision_rw must be called BEFORE scenario_start")
+        self._decision_rw = "random"
+    
+    @property
+    def rw_intro_strategy(self):
+        return self._rw_strategy
+
+    def scenario_enable_local_rep(self):
+        # dependencies
+        if not (self._scenario_calls["scenario_start"] <= 0):
+            raise RuntimeError("scenario_enable_local_rep must be called BEFORE scenario_start")
+        self._rw_strategy = "local_rep"
+    
+    def scenario_enable_global_rep(self):
+        # dependencies
+        if not (self._scenario_calls["scenario_start"] <= 0):
+            raise RuntimeError("scenario_enable_global_rep must be called BEFORE scenario_start")
+        self._rw_strategy = "global_rep"
+    
+    def scenario_enable_metr(self):
+        # dependencies
+        if not (self._scenario_calls["scenario_start"] <= 0):
+            raise RuntimeError("scenario_enable_metr must be called BEFORE scenario_start")
+        self._rw_strategy = "metr"
+    
+    def scenario_enable_weights(self):
+        # dependencies
+        if not (self._scenario_calls["scenario_start"] <= 0):
+            raise RuntimeError("scenario_enable_metr must be called BEFORE scenario_start")
+        self._rw_strategy = "weights"
+    
     @property
     def introduction_strategy(self):
         return self._introduction_strategy
@@ -171,7 +217,7 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
         self._sync_strategy = ("enable_top_n_vertex", int(n), distribute, gather)
 
     def scenario_upload_activity_from_database(self, filepath, begin="0", end="0", multiplier="1.0"):
-        db = sqlite3.connect(path.join(self._kargs["localcodedir"], filepath))
+        db = sqlite3.connect(os.path.join(self._kargs["localcodedir"], filepath))
         cur = db.cursor()
         maxpeerid1, maxpeerid2, mintime, maxtime = next(cur.execute(u"SELECT MAX(interactions.first_peer_number), MAX(interactions.second_peer_number), MIN(interactions.time), MAX(interactions.time) FROM interactions"))
         maxpeerid = int(max(maxpeerid1, maxpeerid2))
@@ -448,7 +494,7 @@ JOIN predefined_identities s ON s.peer_number = r.second_peer_number""" + where)
     def scenario_database_churn(self, filepath, begin="0", end="0", multiplier="1.0"):
         db = sqlite3.connect(os.path.join(self._kargs["localcodedir"], filepath))
         cur = db.cursor()
-        maxpeerid, minonline, maxonline = next(cur.execute(u"SELECT MAX(session.peer), MIN(session.online), MAX(session.online) FROM session JOIN sample ON sample.peer = session.peer"))
+        maxpeerid, minonline, maxonline = next(cur.execute(u"SELECT MAX(session.peer), MIN(session.online), MAX(session.online) FROM session")) #JOIN sample ON sample.peer = session.peer"))
 
         begin = int(begin)
         end = int(end) if int(end) > 0 else maxonline
@@ -466,7 +512,7 @@ JOIN predefined_identities s ON s.peer_number = r.second_peer_number""" + where)
 
     def _database_churn_helper(self, churn):
         for online, duration in churn:
-            delay = max(0.0, online - time())
+            delay = max(0.0, online - time.time())
             logger.debug("will go online in %.2f seconds", delay)
             yield delay
             self.scenario_churn("online", duration)

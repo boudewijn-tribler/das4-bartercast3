@@ -13,7 +13,7 @@ def generate_packets(db, cur, cid):
     packets into the predefined_records table.
     """
     def encode(peer1, peer2, global_time, cycle, up122, up221):
-        assert peer1 < peer2, [peer1, peer2]
+        #assert peer1 < peer2, [peer1, peer2]
         key1, ec1 = ecs[peer1]
         key2, ec2 = ecs[peer2]
         body = "".join(("\x00\x01",     # versions
