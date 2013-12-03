@@ -664,7 +664,10 @@ class BarterCommunity(Community):
         """
         assert message.name == u"barter-record"
         assert not message.authentication.is_signed
-        logger.debug("incoming signature request %s", message)
+        logger.warning("incoming signature request %s %d@%d",
+                       message,
+                       message.authentication.member.database_id,
+                       message.distribution.global_time)
 
         _, first_member = message.authentication.signed_members[0]
         _, second_member = message.authentication.signed_members[1]
