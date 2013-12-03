@@ -253,7 +253,7 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
 
             # immediately create a barter record for this edge
             candidate.associate(member)
-            community.create_barter_record(member)
+            community.create_barter_record(candidate, member)
 
         else:
             self.log("scenario-upload-activity", state="fail", reason="can not upload when offline")
