@@ -654,7 +654,8 @@ class BarterCommunity(Community):
                                     # the following parameters are used for debugging only
                                     time(), time(), book.download, book.upload, 0, 0),
                            sign=False)
-        return self.create_dispersy_signature_request(candidate, record, self.on_signature_response)
+        return self.create_dispersy_signature_request(candidate, record, self.on_signature_response,
+                                                      success_func=self.on_signature_success)
 
     def allow_signature_request(self, message):
         """
@@ -746,6 +747,16 @@ class BarterCommunity(Community):
             self._statistic_outgoing_signature_request_timeout += 1
             self.remove_from_slope(cache.members[0])
             return False
+
+    def on_signature_success(self, cache, new_message):
+        """
+        A dispersy-signature-response has been accepted.
+
+        NEW_MESSAGE contains the double signed message.  CACHE contains the other participating
+        candidates.
+        """
+        # push the new message to the other peer
+        self._dispersy.endpoint.send(cache.candidates, [new_message.packet])
 
     def _periodically_create_records(self):
         """
