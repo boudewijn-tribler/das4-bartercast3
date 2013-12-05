@@ -51,7 +51,11 @@ class BarterDatabase(Database):
 
     def __init__(self, dispersy):
         self._dispersy = dispersy
-        super(BarterDatabase, self).__init__(path.join(dispersy.working_directory, u"sqlite", u"barter.db"))
+        if self._dispersy.database.file_path == u":memory:":
+            database_filename = u":memory"
+        else:
+            database_filename = path.join(path.dirname(self._dispersy.database.file_path), u"barter.db")
+        super(BarterDatabase, self).__init__(database_filename)
 
     def open(self, *args, **kargs):
         if super(BarterDatabase, self).open(*args, **kargs):
