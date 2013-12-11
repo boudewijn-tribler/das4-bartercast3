@@ -1174,6 +1174,7 @@ class BarterCommunity(Community):
         
             # with teleportation probability 0.2
             if random.random() < 0.2:
+                self.log("walk-teleport")
                 logger.info("teleportation phase with probability 0.2")
                 pass
 
