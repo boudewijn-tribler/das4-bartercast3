@@ -154,8 +154,10 @@ CREATE TABLE walk_candidate (
 
     def walk_candidate(self, stamp, name, lan_address, **kargs):
         self.timestep += 1
-        self.cur.execute(u"INSERT INTO walk_candidate (peer, destination_peer, timestamp, timestep) VALUES (?, ?, ?, ?)",
-                         (self.peer_id, self.get_peer_id_from_lan_address(lan_address, or_create=True), stamp, self.timestep))
+        # LAN_ADDRESS can be None when no destination peer was found
+        if lan_address:
+            self.cur.execute(u"INSERT INTO walk_candidate (peer, destination_peer, timestamp, timestep) VALUES (?, ?, ?, ?)",
+                             (self.peer_id, self.get_peer_id_from_lan_address(lan_address, or_create=True), stamp, self.timestep))
         self.last_walk = self.cur.lastrowid
 
     def finish(self):
