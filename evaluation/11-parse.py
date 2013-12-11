@@ -49,7 +49,8 @@ CREATE TABLE walk_candidate (
  peer INTEGER,                          -- the peer that initiated contact
  destination_peer INTEGER,              -- the peer that is contacted
  timestamp FLOAT,                       -- when the contact occurred
- timestep INTEGER                       -- the nth walk performed by the peer
+ timestep INTEGER,                      -- the nth walk performed by the peer
+ chain INTEGER                          -- the nth walk after teleport
 );
 """)
 
@@ -65,6 +66,7 @@ CREATE TABLE walk_candidate (
         # self.mapto(self.in_signature_response, "in-signature-response")
         # self.mapto(self.signature_timeout, "signature-timeout")
         self.mapto(self.walk_candidate, "walk-candidate")
+        self.mapto(self.walk_teleport, "walk-teleport")
 
     def start_parser(self, filename):
         super(BarterScenarioParser, self).start_parser(filename)
@@ -74,6 +76,10 @@ CREATE TABLE walk_candidate (
 
         # TIMESTEP is the walk number, i.e. this value is incremented by one for each walk performed
         self.timestep = 0
+
+        # CHAIN is the chain number, i.e. this value is incremented by one for each walk performed
+        # and set back to zero on every walk-teleport
+        self.chain = 0
 
     #     self.my_member = ""
     #     self.my_class = ""
@@ -152,12 +158,16 @@ CREATE TABLE walk_candidate (
         self.cur.execute(u"INSERT OR IGNORE INTO received_record (record, peer, timestamp, walk) VALUES (?, ?, ?, ?)",
                          (id_, self.peer_id, stamp, self.last_walk))
 
+    def walk_teleport(self, stamp, name):
+        self.chain = 0
+
     def walk_candidate(self, stamp, name, lan_address, **kargs):
         self.timestep += 1
+        self.chain += 1
         # LAN_ADDRESS can be None when no destination peer was found
         if lan_address:
-            self.cur.execute(u"INSERT INTO walk_candidate (peer, destination_peer, timestamp, timestep) VALUES (?, ?, ?, ?)",
-                             (self.peer_id, self.get_peer_id_from_lan_address(lan_address, or_create=True), stamp, self.timestep))
+            self.cur.execute(u"INSERT INTO walk_candidate (peer, destination_peer, timestamp, timestep, chain) VALUES (?, ?, ?, ?, ?)",
+                             (self.peer_id, self.get_peer_id_from_lan_address(lan_address, or_create=True), stamp, self.timestep, self.chain))
         self.last_walk = self.cur.lastrowid
 
     def finish(self):

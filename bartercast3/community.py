@@ -999,6 +999,19 @@ class BarterCommunity(Community):
         method = self._scenario_script.introduction_strategy
         selection=self._scenario_script.decision_rw
 
+        # malicious peers don't walk and hence do not have anyone in their neighbourhood to
+        # introduce.  however, we assume they are all connected and will randomly choose one of the
+        # other malicious peers
+        lowest_malicious_peer = 900
+        highest_malicious_peer = 999
+        if lowest_malicious_peer <= self._scenario_script.peer_number <= highest_malicious_peer:
+            malicious_peer_numbers = range(lowest_malicious_peer, highest_malicious_peer + 1)
+            malicious_peer_numbers.remove(self._scenario_script.peer_number)
+            destination_peer_number = random.choice(malicious_peer_numbers)
+            peer = self._scenario_script.get_peer_from_number(destination_peer_number)
+            candidate = WalkCandidate(peer.lan_address, False, peer.lan_address,peer.wan_address,u"unknown")
+            return candidate
+
         if method == "local-intro":
             
             def get_score(peer):
@@ -1174,6 +1187,7 @@ class BarterCommunity(Community):
         
             # with teleportation probability 0.2
             if random.random() < 0.2:
+                self.log("walk-teleport")
                 logger.info("teleportation phase with probability 0.2")
                 pass
 
