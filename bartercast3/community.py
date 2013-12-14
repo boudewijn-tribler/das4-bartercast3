@@ -145,7 +145,7 @@ class BarterCommunity(Community):
         self._database.open()
 
         # _BOOKS cache (reduce _DATABASE access)
-        self._books_length = 512
+        self._books_length = 0 #512
         self._books = OrderedDict()
 
         # _DOWNLOAD_STATES contains all peers that are currently downloading.  when we determine
@@ -174,7 +174,6 @@ class BarterCommunity(Community):
         self._has_been_killed = False
 
         # wait till next time we can create records with the candidates on our slope
-        self._pending_callbacks.append(self._dispersy.callback.register(self._periodically_create_records))
         self._pending_callbacks.append(self._dispersy.callback.register(self._periodically_compute_score))
 
         # setup sync strategy
@@ -185,7 +184,9 @@ class BarterCommunity(Community):
             if strategy[0] == "enable_top_n_vertex":
                 self.enable_top_n_vertex(strategy[1], strategy[2], strategy[3])
 
-
+    @property
+    def dispersy_acceptable_global_time_range(self):
+       return 11000
     @property                                       
     def dispersy_sync_bloom_filter_error_rate(self):
         return 0.05
@@ -239,45 +240,45 @@ class BarterCommunity(Community):
                         comb.update(ver3)
                         comb.update(ver)
                         comb.update(ver4)
-
-                        members = set()
-                        members.update(member_id for member_id, _ in comb.iterkeys())
-                        members.update(member_id for _, member_id in comb.iterkeys())
+                        if comb:
+                            members = set()
+                            members.update(member_id for member_id, _ in comb.iterkeys())
+                            members.update(member_id for _, member_id in comb.iterkeys())
                                                 
-                        rows=array([member_id for member_id, _ in comb.iterkeys()])
-                        cols=array([member_id for _, member_id in comb.iterkeys()])
-                        maxid=max(members)+1
-                        val =comb.values()
-                        val2=np.ones(len(val))
+                            rows=array([member_id for member_id, _ in comb.iterkeys()])
+                            cols=array([member_id for _, member_id in comb.iterkeys()])
+                            maxid=max(members)+1
+                            val =comb.values()
+                            val2=np.ones(len(val))
 
-                        X=csr_matrix((array(val2),(rows,cols)),shape=(maxid,maxid),dtype=float)
-                        #X.astype(float)
-                        #g = Graph()
+                            X=csr_matrix((array(val2),(rows,cols)),shape=(maxid,maxid),dtype=float)
+                            #X.astype(float)
+                            #g = Graph()
 
-                        #g.add_vertices(maxid+1)
-                        #g.add_edges(ed+ed2)
-                        #g.vs["id"]=range(maxid+1)
-                        #g.es["weights"]=weightsa
+                            #g.add_vertices(maxid+1)
+                            #g.add_edges(ed+ed2)
+                            #g.vs["id"]=range(maxid+1)
+                            #g.es["weights"]=weightsa
                         
-                        #g=g.simplify()
-                        #multi_edges=g.es.is_multiple()
-                        #g.es[multi_edges].delete()
-                        #clust = g.clusters(mode='weak')
-                        #lcc = clust.giant()
-                        evals_large, evecs_large = eigsh(X, k=2, which='LM')
-                        score=np.zeros(len(neig),dtype=float)
+                            #g=g.simplify()
+                            #multi_edges=g.es.is_multiple()
+                            #g.es[multi_edges].delete()
+                            #clust = g.clusters(mode='weak')
+                            #lcc = clust.giant()
+                            evals_large, evecs_large = eigsh(X, k=2, which='LM')
+                            score=np.zeros(len(neig),dtype=float)
 
-                        #logger.info("Computation of eigenvalues %f\n",evals_large)
-                        B=csr_matrix.todok(X)
-                        k=0
-                        for i in neig:
-                             score[k] =B[i,node]*evecs_large[i,0]/(evals_large[0]*evecs_large[node,0]) 
-                             k=k+1
-                        #self.log("Computation of Reputation... Phase 3: computing the Reputations", count=len(lcc.es), len_ed=len(ed), len_ed2=len(ed2))
-                        #score=lcc.personalized_pagerank(directed=True, damping=0.7, reset_vertices=node, weights=g.es["weights"]) #arpack_options=None)
+                            #logger.info("Computation of eigenvalues %f\n",evals_large)
+                            B=csr_matrix.todok(X)
+                            k=0
+                            for i in neig:
+                                 score[k] =B[i,node]*evecs_large[i,0]/(evals_large[0]*evecs_large[node,0]) 
+                                 k=k+1
+                            #self.log("Computation of Reputation... Phase 3: computing the Reputations", count=len(lcc.es), len_ed=len(ed), len_ed2=len(ed2))
+                            #score=lcc.personalized_pagerank(directed=True, damping=0.7, reset_vertices=node, weights=g.es["weights"]) #arpack_options=None)
 
-                        #logger.info("computed scores %f\n",score)
-                        self._scores=dict(zip(neig,score))
+                            #logger.info("computed scores %f\n",score)
+                            self._scores=dict(zip(neig,score))
 
 
                 if method=="local_rep":
@@ -298,54 +299,54 @@ class BarterCommunity(Community):
                         comb.update(ver3)
                         comb.update(ver)
                         comb.update(ver4)
-
-                        members = set()
-                        members.update(member_id for member_id, _ in comb.iterkeys())
-                        members.update(member_id for _, member_id in comb.iterkeys())
+                        if comb:
+                            members = set()
+                            members.update(member_id for member_id, _ in comb.iterkeys())
+                            members.update(member_id for _, member_id in comb.iterkeys())
                                                 
-                        rows=array([member_id for member_id, _ in comb.iterkeys()])
-                        cols=array([member_id for _, member_id in comb.iterkeys()])
-                        maxid=max(members)+1
-                        val =comb.values()
-                        val2=np.ones(len(val))
-                        X=csr_matrix((array(val2),(rows,cols)),shape=(maxid,maxid),dtype=float)
-                        #ver3 = dict(self._database.execute(u"SELECT second_member,second_upload FROM record"))
-                        #self.log("Computation of Reputation... Phase 2: constructing the graph", count=len(comb))
-                        #ed = [(node, peer_number) for peer_number in ver]
-                        #ed2 = zip(ver2, ver3) #[(peer_number1, peer_number2) for peer_number1, peer_number2 in zip(ver2, ver3)]
+                            rows=array([member_id for member_id, _ in comb.iterkeys()])
+                            cols=array([member_id for _, member_id in comb.iterkeys()])
+                            maxid=max(members)+1
+                            val =comb.values()
+                            val2=np.ones(len(val))
+                            X=csr_matrix((array(val2),(rows,cols)),shape=(maxid,maxid),dtype=float)
+                            #ver3 = dict(self._database.execute(u"SELECT second_member,second_upload FROM record"))
+                            #self.log("Computation of Reputation... Phase 2: constructing the graph", count=len(comb))
+                            #ed = [(node, peer_number) for peer_number in ver]
+                            #ed2 = zip(ver2, ver3) #[(peer_number1, peer_number2) for peer_number1, peer_number2 in zip(ver2, ver3)]
 
-                        score=np.zeros(len(neig),dtype=float)
-                        k=0
-                        #B=X.todense()
-                        B=csr_matrix.todok(X)
-                        for i in neig:
-                             score[k] =sum(B[i,:].todense())
-                             k=k+1 
-                        #weights2 = [peer_number for peer_number, in self._database.execute(u"SELECT second_upload FROM record")]
-                        #weightsa = weights1 + weights2
+                            score=np.zeros(len(neig),dtype=float)
+                            k=0
+                            #B=X.todense()
+                            B=csr_matrix.todok(X)
+                            for i in neig:
+                                score[k] =sum(B[i,:].todense())
+                                k=k+1 
+                            #weights2 = [peer_number for peer_number, in self._database.execute(u"SELECT second_upload FROM record")]
+                            #weightsa = weights1 + weights2
                         
-                        #g = Graph()
-                        #g.add_vertices(len(members))                 
+                            #g = Graph()
+                            #g.add_vertices(len(members))                 
 
-                        #maxid=max(max(ver+ver2+ver3),node)
-
-                        #g.add_vertices(maxid+1)
-                        #g.add_edges(comb.iterkeys())
-                        #g.vs["id"]=members.iterkeys()
-                        #g.es["weights"]=comb.itervalues()
-                        #self.log("Computation of Reputation... Phase 1: accessing the database ")
-                        #node = self.my_member.database_id
-                        #print score
-                        #ver = [peer_number for peer_number, in self._database.execute(u"SELECT member FROM book")]
-                        #weights = [peer_number for peer_number, in self._database.execute(u"SELECT download FROM book")]
-                        #self.log("Computation of Reputation... Phase 2: computing the score", count=len(ver))
+                            #maxid=max(max(ver+ver2+ver3),node)
+ 
+                            #g.add_vertices(maxid+1)
+                            #g.add_edges(comb.iterkeys())
+                            #g.vs["id"]=members.iterkeys()
+                            #g.es["weights"]=comb.itervalues()
+                            #self.log("Computation of Reputation... Phase 1: accessing the database ")
+                            #node = self.my_member.database_id
+                            #print score
+                            #ver = [peer_number for peer_number, in self._database.execute(u"SELECT member FROM book")]
+                            #weights = [peer_number for peer_number, in self._database.execute(u"SELECT download FROM book")]
+                            #self.log("Computation of Reputation... Phase 2: computing the score", count=len(ver))
                         
-                        #scores = g.degree( mode=ALL, loops=True)
-                        #scores =g.strength(mode=In, loops=False, weights=g.es["weights"])
-                        # score=weights
+                            #scores = g.degree( mode=ALL, loops=True)
+                            #scores =g.strength(mode=In, loops=False, weights=g.es["weights"])
+                            # score=weights
                         
                         
-                        self._scores=dict(zip(neig, score))
+                            self._scores=dict(zip(neig, score))
 
 
 
@@ -369,54 +370,27 @@ class BarterCommunity(Community):
                         comb.update(ver3)
                         comb.update(ver)
                         comb.update(ver4)
+                        if comb:
+	                    members = set()
+                            members.update(member_id for member_id, _ in comb.iterkeys())
+                            members.update(member_id for _, member_id in comb.iterkeys())
 
-                        members = set()
-                        members.update(member_id for member_id, _ in comb.iterkeys())
-                        members.update(member_id for _, member_id in comb.iterkeys())
-                                                
-                        rows=array([member_id for member_id, _ in comb.iterkeys()])
-                        cols=array([member_id for _, member_id in comb.iterkeys()])
-                        maxid=max(members)+1
-                        val =comb.values()
-                        val2=np.ones(len(val))
-                        X=csr_matrix((array(val),(rows,cols)),shape=(maxid,maxid),dtype=float)
-                        #ver3 = dict(self._database.execute(u"SELECT second_member,second_upload FROM record"))
-                        #self.log("Computation of Reputation... Phase 2: constructing the graph", count=len(comb))
-                        #ed = [(node, peer_number) for peer_number in ver]
-                        #ed2 = zip(ver2, ver3) #[(peer_number1, peer_number2) for peer_number1, peer_number2 in zip(ver2, ver3)]
+                            rows=array([member_id for member_id, _ in comb.iterkeys()])
+                            cols=array([member_id for _, member_id in comb.iterkeys()])
+	                    maxid=max(members)+1
+	                    val =comb.values()
+	                    val2=np.ones(len(val))
+                            X=csr_matrix((array(val),(rows,cols)),shape=(maxid,maxid),dtype=float)
 
-                        score=np.zeros(len(neig),dtype=float)
-                        k=0
-                        #B=X.todense()
-                        B=csr_matrix.todok(X)
-                        for i in neig:
-                             score[k] =B[i,node] #.todense()
-                             k=k+1 
-                        #weights2 = [peer_number for peer_number, in self._database.execute(u"SELECT second_upload FROM record")]
-                        #weightsa = weights1 + weights2
-                        
-                        #g = Graph()
-                        #g.add_vertices(len(members))                 
+                            score=np.zeros(len(neig),dtype=float)
+	                    k=0
+                            B=csr_matrix.todok(X)
+	                    for i in neig:
+                                 score[k] =B[i,node] #.todense()
+	                         k=k+1 
 
-                        #maxid=max(max(ver+ver2+ver3),node)
 
-                        #g.add_vertices(maxid+1)
-                        #g.add_edges(comb.iterkeys())
-                        #g.vs["id"]=members.iterkeys()
-                        #g.es["weights"]=comb.itervalues()
-                        #self.log("Computation of Reputation... Phase 1: accessing the database ")
-                        #node = self.my_member.database_id
-                        #print score
-                        #ver = [peer_number for peer_number, in self._database.execute(u"SELECT member FROM book")]
-                        #weights = [peer_number for peer_number, in self._database.execute(u"SELECT download FROM book")]
-                        #self.log("Computation of Reputation... Phase 2: computing the score", count=len(ver))
-                        
-                        #scores = g.degree( mode=ALL, loops=True)
-                        #scores =g.strength(mode=In, loops=False, weights=g.es["weights"])
-                        # score=weights
-                        
-                        
-                        self._scores=dict(zip(neig, score))
+                            self._scores=dict(zip(neig, score))
 
 
 
@@ -429,6 +403,9 @@ class BarterCommunity(Community):
 
                         neig = [member for member, in self._database.execute(u"SELECT member FROM book")]
                         ver2 = dict(((first, second), upload) for first, second, upload in self._database.execute(u"SELECT first_member,second_member,first_upload  FROM record"))
+
+                        neig = [member for member, in self._database.execute(u"SELECT member FROM book")]
+                        ver2 = dict(((first, second), upload) for first, second, upload in self._database.execute(u"SELECT first_member,second_member,first_upload  FROM record"))
                         ver3 = dict(((second, first), upload) for first, second, upload in self._database.execute(u"SELECT first_member,second_member,second_upload  FROM record"))
 
                         comb = dict()
@@ -436,36 +413,39 @@ class BarterCommunity(Community):
                         comb.update(ver3)
                         comb.update(ver)
                         comb.update(ver4)
+                        if comb:
+                              members = set()
+                              members.update(member_id for member_id, _ in comb.iterkeys())
+                              members.update(member_id for _, member_id in comb.iterkeys())
 
-                        members = set()
-                        members.update(member_id for member_id, _ in comb.iterkeys())
-                        members.update(member_id for _, member_id in comb.iterkeys())
-                                                
-                        rows=array([member_id for member_id, _ in comb.iterkeys()])
-                        cols=array([member_id for _, member_id in comb.iterkeys()])
-                        maxid=max(members)+1
-                        val =comb.values()
-                        val2=np.ones(len(val))
-                        X=csr_matrix((array(val2),(rows,cols)),shape=(maxid,maxid),dtype=float)
-                        #ver3 = dict(self._database.execute(u"SELECT second_member,second_upload FROM record"))
-                        self.log("Computation of Reputation... Phase 2: constructing the graph", count=len(comb))
-                        k=0
-                        score1=np.zeros(len(neig),dtype=float)
-                        #B=X.todense()
-                        B=csr_matrix.todok(X)
-                        for i in neig:
-                             score1[k] =sum(B[i,:].todense())
-                             score1[k]=float(score1[k])
-                             k=k+1 
-                        
-                        deg=float(sum(B[node,:].todense()))
-                        
-                        score=np.zeros(len(neig))
-                        k=0
-                        for i in range(len(neig)):
-                             score[i]=(1/deg)*min(1.0,(score1[i]/deg))
-                              
-                        self._scores=dict(zip(neig, score))
+                              rows=array([member_id for member_id, _ in comb.iterkeys()])
+                              cols=array([member_id for _, member_id in comb.iterkeys()])
+                              maxid=max(members)+1
+                              val =comb.values()
+                              val2=np.ones(len(val))
+                              X=csr_matrix((array(val2),(rows,cols)),shape=(maxid,maxid),dtype=float)
+                              #ver3 = dict(self._database.execute(u"SELECT second_member,second_upload FROM record"))
+                              self.log("Computation of Reputation... Phase 2: constructing the graph", count=len(comb))
+                              k=0
+                              score1=np.zeros(len(neig),dtype=float)
+                              #B=X.todense()
+                              B=csr_matrix.todok(X)
+	                      for i in neig:
+                                     score1[k] =sum(B[i,:].todense())
+                                     score1[k]=float(score1[k])
+                                     k=k+1 
+
+                              deg=float(sum(B[node,:].todense()))
+
+                              score=np.zeros(len(neig)+1)
+	                      k=0
+                              for i in range(len(neig)):
+                                       score[i]=(1/deg)*min(1.0,(score1[i]/deg))
+
+                              score[len(neig)]=1-sum(score[range(len(neig))])
+
+                              neig.append(None)
+                              self._scores=dict(zip(neig, score))
 
             except Exception as exception:
                 exception = str(exception)
@@ -570,7 +550,7 @@ class BarterCommunity(Community):
             self._books[member.database_id] = book
             if len(self._books) > self._books_length:
                 _, old = self._books.popitem(False)
-                self._database.execute(u"INSERT OR REPLACE INTO book (member, cycle, effort, upload, download) VALUES (?, ?, ?, ?)",
+                self._database.execute(u"INSERT OR REPLACE INTO book (member, cycle, effort, upload, download) VALUES (?, ?, ?, ?,?)",
                                        (old.member.database_id, old.cycle, buffer(old.effort.bytes), old.upload, old.download))
         return book
 
@@ -1002,15 +982,15 @@ class BarterCommunity(Community):
         # malicious peers don't walk and hence do not have anyone in their neighbourhood to
         # introduce.  however, we assume they are all connected and will randomly choose one of the
         # other malicious peers
-        lowest_malicious_peer = 900
-        highest_malicious_peer = 999
-        if lowest_malicious_peer <= self._scenario_script.peer_number <= highest_malicious_peer:
-            malicious_peer_numbers = range(lowest_malicious_peer, highest_malicious_peer + 1)
-            malicious_peer_numbers.remove(self._scenario_script.peer_number)
-            destination_peer_number = random.choice(malicious_peer_numbers)
-            peer = self._scenario_script.get_peer_from_number(destination_peer_number)
-            candidate = WalkCandidate(peer.lan_address, False, peer.lan_address,peer.wan_address,u"unknown")
-            return candidate
+        #lowest_malicious_peer = 900
+        #highest_malicious_peer = 999
+        #if lowest_malicious_peer <= self._scenario_script.peer_number <= highest_malicious_peer:
+        #    malicious_peer_numbers = range(lowest_malicious_peer, highest_malicious_peer + 1)
+        #    malicious_peer_numbers.remove(self._scenario_script.peer_number)
+        #    destination_peer_number = choice(malicious_peer_numbers)
+        #    peer = self._scenario_script.get_peer_from_number(destination_peer_number)
+        #    candidate = WalkCandidate(peer.lan_address, False, peer.lan_address,peer.wan_address,u"unknown")
+        #    return candidate
 
         if method == "local-intro":
             
@@ -1058,26 +1038,30 @@ class BarterCommunity(Community):
                    index=random.randint(0,(len(list_peer)-1))
                if selection=="scores":
                    peer_scores = [get_score(peer) for peer in list_peer]
+                   peer_scores.append(self._scores.get(None, 0.0))
                    index = prob_choice(peer_scores)
                    logger.info("chosen index %d", index)
-                   
-               peer = list_peer[index]
-               #if self._scenario_script.peer_number in (0, 499):
-               #    peer = list_peer[0] 
-               #else:
-               #    peer  = list_peer[-1]
-               
+               if index<len(list_peer):
+                   peer = list_peer[index]
+                   if exclude_peer.peer_number == peer.peer_number:
+                        candidate=None
+                        logger.info("node %d cannot introduce a candidate",self._scenario_script.peer_number)
+                   else:
+                        #candidate = candidates[index_in_can]
+                        #candidate=
+                        #peer_tuple=self._scenario_script.get_peer_from_public_key(member.public_key)
+                        candidate = WalkCandidate(peer.lan_address, False, peer.lan_address,peer.wan_address,u"unknown")
 
-               if exclude_peer.peer_number == peer.peer_number:
-                  candidate=None
-                  logger.info("node %d cannot introduce a candidate",self._scenario_script.peer_number)
+                        logger.info("node %d chooses peer_number:%d;  address:%s", self._scenario_script.peer_number, peer.peer_number, candidate.lan_address)
                else:
-                  #candidate = candidates[index_in_can]
-                  #candidate=
-                  #peer_tuple=self._scenario_script.get_peer_from_public_key(member.public_key)
-                  candidate = WalkCandidate(peer.lan_address, False, peer.lan_address,peer.wan_address,u"unknown")
-
-                  logger.info("node %d chooses peer_number:%d;  address:%s", self._scenario_script.peer_number, peer.peer_number, candidate.lan_address)
+                        candidate=None
+                        #if self._scenario_script.peer_number in (0, 499):
+                        logger.info("node %d choose None", self._scenario_script.peer_number)
+       
+                        #    peer = list_peer[0] 
+                        #else:
+                        #    peer  = list_peer[-1]
+               
                
             else:
                #except ValueError:
@@ -1174,6 +1158,29 @@ class BarterCommunity(Community):
         method = self._scenario_script.candidate_strategy
         #walk_type="with_restarts"
 
+        def get_score(candidate):
+                try:
+                    peer = self._scenario_script.get_peer_from_candidate(candidate)
+                except:
+                    logger.warning("fault in the database: unable to get peer from candidate")
+                    return 0.0
+                member = self._dispersy.get_member(peer.public_key)
+                return self._scores.get(member.database_id, 0.0)
+        
+        def prob_choice(bias):
+                    randNum = random.random() # in [0,1)
+                    if sum(bias)>0:
+                        sum_mass = 0.0
+                        result = 0
+                        norm_bias=[ x*(1/sum(bias)) for x in bias]
+                        for mass in norm_bias:
+                            sum_mass += mass
+                            if randNum <= sum_mass:
+                                return result
+                            result+=1
+                    else:
+                        result = int(randNum*len(bias))
+                        return result
         # use the default Dispersy strategy if neither enable_probabilistic_candidate nor
         # enable_deterministic_candidate is chosen
         if method == "dispersy":
@@ -1201,9 +1208,9 @@ class BarterCommunity(Community):
                 if candidates:
                     candidates.sort()
                     result = candidates[-1][1]
-
-                    if not result.is_eligible_for_walk(now, method="dispersy"):
-                       result = None
+                    # this must be enabled for churn
+                    # if not result.is_eligible_for_walk(now, method="dispersy"):
+                    #   result = None
 
                 #logger.info("node %d chooses peer_number:%d", self._scenario_script.peer_number, result.peer_number)
                 #if walk_type="early_teminated":
@@ -1219,47 +1226,26 @@ class BarterCommunity(Community):
                 #               candidates.sort()
                 #               yield candidates[-1]
 
-        if method in ("probabilistic", "deterministic"):
-            def get_score(candidate):
-                try:
-                    peer = self._scenario_script.get_peer_from_candidate(candidate)
-                except:
-                    logger.warning("fault in the database: unable to get peer from candidate")
-                    return 0.0
-                member = self._dispersy.get_member(peer.public_key)
-                return self._scores.get(member.database_id, 0.0)
+        #if method in ("probabilistic", "deterministic"):
 
             #[(SCORE, CANDIDATE), (SCORE, CANDIDATE), ...]
-            candidates = [(get_score(candidate), candidate)
-                          for candidate
-                          in self._candidates.itervalues()
-                          if candidate.is_eligible_for_walk(now, method=method)]
-            if candidates:
+         #   candidates = [(get_score(candidate), candidate)
+         #                 for candidate
+         #                 in self._candidates.itervalues()
+         #                 if candidate.is_eligible_for_walk(now, method=method)]
+         #   if candidates:
                 #### Preobabilistic
                 # assume sum of bias is 1
-                def prob_choice(bias):
-                    randNum = random.random() # in [0,1)
-                    if sum(bias)>0:
-                        sum_mass = 0.0
-                        result = 0
-                        norm_bias=[ x*(1/sum(bias)) for x in bias]
-                        for mass in norm_bias:
-                            sum_mass += mass
-                            if randNum < sum_mass:
-                                return result
-                            result+=1
-                    else:
-                        result = int(randNum*len(bias))
-                        return result
 
-                if method=="probabilistic":
-                    candidate_index = prob_choice([score for score, candidate in candidates])
-                    result = candidates[candidate_index][1]
+         #       if method=="probabilistic":
+                    
+         #           candidate_index = prob_choice([score for score, candidate in candidates])
+         #           result = candidates[candidate_index][1]
 
-                if method=="deterministic":
+        #         if method=="deterministic":
                     # yield candidates in best to worst order
-                    sorted(candidates, reverse=True)
-                    result = candidates[0][1]
+         #           sorted(candidates, reverse=True)
+         #           result = candidates[0][1]
 
         if result is None: 
             logger.info("RW failed: back to the bootstrap nodes ")
@@ -1275,25 +1261,33 @@ class BarterCommunity(Community):
                list_peer = [self._scenario_script.get_peer_from_public_key(member.public_key) for member in list_member]
             except RuntimeError:
                return None
+            
+            candidates = [WalkCandidate(peer.lan_address, False, peer.lan_address, peer.wan_address, u"unknown")
+                          for peer
+                          in list_peer]
+            candidates = [(get_score(candidate), candidate) for candidate in candidates]       
+            if candidates:
+                 candidate_index = prob_choice([score for score, candidate in candidates])
+                 result = candidates[candidate_index][1]
             #can=[self._scenario_script.get_peer_from_candidate(candidate).peer_number for candidate in candidates]
             #list_cand= intersect(ver,can)
-            list_peer.sort(key=lambda peer: peer.peer_number)
-            if list_peer:
+           # list_peer.sort(key=lambda peer: peer.peer_number)
+            #if list_peer:
                #index=randint(0,(len(list_cand)-1))
                #member = list_cand[index]
                
-               if self._scenario_script.peer_number in (0, 499):
-                   peer = list_peer[0] 
-               else:
-                   peer  = list_peer[-1]
+             #  if self._scenario_script.peer_number in (0, 499):
+             #      peer = list_peer[0] 
+             #  else:
+             #      peer  = list_peer[-1]
                
                   #candidate = candidates[index_in_can]
                   #candidate=
                   #peer_tuple=self._scenario_script.get_peer_from_public_key(member.public_key)
-               result = WalkCandidate(peer.lan_address, False, peer.lan_address,peer.wan_address,u"unknown")
-        self.log("available-candidates", 
-                 verified=[str(candidate) for candidate in self.dispersy_yield_verified_candidates()], 
-                 unverified=[str(candidate) for candidate in self.dispersy_yield_candidates()])
+              # result = WalkCandidate(peer.lan_address, False, peer.lan_address,peer.wan_address,u"unknown")
+        #self.log("available-candidates", 
+         #        verified=[str(candidate) for candidate in self.dispersy_yield_verified_candidates()], 
+         #        unverified=[str(candidate) for candidate in self.dispersy_yield_candidates()])
 
         if result is None:
             self.log("walk-candidate", strategy=method, lan_address=None, wan_address=None)
@@ -1454,8 +1448,7 @@ class BarterCommunity(Community):
                         break
 
                 if packets:
-                    logger.debug("syncing %d packets (%d bytes) over [%d:%d] selecting (%%%d+%d) to %s",
-                                 len(packets),
+                    logger.debug("syncing %d packets (%d bytes) over [%d:%d] selecting (%%%d+%d) to %s",len(packets),
                                  sum(len(packet) for packet in packets),
                                  time_low, time_high, message.payload.modulo, message.payload.offset,
                                  message.candidate)
@@ -1488,10 +1481,10 @@ class BarterCommunity(Community):
 
         Requires SELF._TOP_N_VERTEXES to contain a list or set with member_id's.
         """
-        # obtain all available messages for this community
+        # obtain all available messages for this community        
+
         meta_messages = [(meta.distribution.priority, -meta.distribution.synchronization_direction_value, meta) for meta in self.get_meta_messages() if isinstance(meta.distribution, SyncDistribution) and meta.distribution.priority > 32]
         meta_messages.sort(reverse = True)
-
         sub_selects = []
         for _, _, meta in meta_messages:
             sub_selects.append(u"""SELECT * FROM (SELECT sync.packet, double_signed_sync.member1, double_signed_sync.member2 FROM sync
