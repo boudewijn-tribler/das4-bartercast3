@@ -216,19 +216,23 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
             raise RuntimeError("scenario_enable_top_n_vertex requires METHOD to be: 'distribute', 'gather', or 'both'")
         self._sync_strategy = ("enable_top_n_vertex", int(n), distribute, gather)
 
-    def scenario_upload_activity_from_database(self, filepath, begin="0", end="0", multiplier="1.0"):
+    def scenario_upload_activity_from_database(self, filepath, runtime): # begin="0", end="0", multiplier="1.0"):
         db = sqlite3.connect(os.path.join(self._kargs["localcodedir"], filepath))
         cur = db.cursor()
         maxpeerid1, maxpeerid2, mintime, maxtime = next(cur.execute(u"SELECT MAX(interactions.first_peer_number), MAX(interactions.second_peer_number), MIN(interactions.time), MAX(interactions.time) FROM interactions"))
         maxpeerid = int(max(maxpeerid1, maxpeerid2))
 
-        begin = int(begin)
-        end = int(end) if int(end) > 0 else maxtime
-        multiplier = float(multiplier)
+        # begin = int(begin)
+        # end = int(end) if int(end) > 0 else maxtime
+        # multiplier = float(multiplier)
+        minutes, seconds = runtime.split(":")
+        runtime = int(minutes) * 60 + int(seconds)
+        multiplier = (maxtime - mintime) / runtime
         peernumber = int(self._kargs["peernumber"]) % maxpeerid
         startstamp = float(self._kargs["startstamp"])
 
-        activity = [((timestamp - mintime - begin) * multiplier + startstamp, int(peer2), int(upload))
+        # activity = [((timestamp - mintime - begin) * multiplier + startstamp, int(peer2), int(upload))
+        activity = [((timestamp - mintime) * multiplier + startstamp, int(peer2), int(upload))
                     for timestamp, peer2, upload
                     in cur.execute(u"SELECT time, second_peer_number, upload_first_to_second FROM interactions WHERE first_peer_number = ?",
                                    (peernumber,))]

@@ -146,7 +146,7 @@ class BarterCommunity(Community):
         self._database.open()
 
         # _BOOKS cache (reduce _DATABASE access)
-        self._books_length = 0 #512
+        self._books_length = 512
         self._books = OrderedDict()
 
         # _DOWNLOAD_STATES contains all peers that are currently downloading.  when we determine
@@ -218,6 +218,9 @@ class BarterCommunity(Community):
 
         yield 5.0 * FIVE_FACTOR
         while True:
+            # store all cached bookkeeping
+            self.flush_books()
+
             exception = None
             begin = time()
             try:
@@ -457,7 +460,7 @@ class BarterCommunity(Community):
                 self.log("compute-score", delay=end-begin, exception=exception)
 
             # wait 60 seconds
-            yield 60.0
+            yield 5.0 * FIVE_FACTOR
 
     @property
     def database(self):
@@ -521,13 +524,14 @@ class BarterCommunity(Community):
         self.download_state_callback([])
 
         # store all cached bookkeeping
-        self._database.executemany(u"INSERT OR REPLACE INTO book (member, cycle, effort, upload, download) VALUES (?, ?, ?, ?, ?)",
-                                   [(book.member.database_id, book.cycle, buffer(book.effort.bytes), book.upload, book.download) for book in self._books.itervalues()])
+        self.flush_books()
 
         # close database
         self._database.close()
 
     def get_book(self, member):
+        assert self._books_length > 0
+
         # try cache
         book = self._books.get(member.database_id)
         if not book:
@@ -554,6 +558,11 @@ class BarterCommunity(Community):
                 self._database.execute(u"INSERT OR REPLACE INTO book (member, cycle, effort, upload, download) VALUES (?, ?, ?, ?,?)",
                                        (old.member.database_id, old.cycle, buffer(old.effort.bytes), old.upload, old.download))
         return book
+
+    def flush_books(self):
+        # store all cached bookkeeping
+        self._database.executemany(u"INSERT OR REPLACE INTO book (member, cycle, effort, upload, download) VALUES (?, ?, ?, ?, ?)",
+                                   [(book.member.database_id, book.cycle, buffer(book.effort.bytes), book.upload, book.download) for book in self._books.itervalues()])
 
     def download_state_callback(self, states):
         assert self._dispersy.callback.is_current_thread, "Must be called on the dispersy.callback thread"
