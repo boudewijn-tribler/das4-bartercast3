@@ -6,7 +6,7 @@ except ImportError:
 
 from json import dumps
 from httplib import HTTPConnection
-from random import *
+#from random import *
 from time import time
 from zlib import compress
 from igraph import *
@@ -30,6 +30,7 @@ from dispersy.logger import get_logger
 logger = get_logger(__name__)
 
 import numpy as np
+import random as pythonrandlib
 from scipy.sparse.linalg import eigsh
 from scipy import *
 
@@ -215,7 +216,7 @@ class BarterCommunity(Community):
         method = self._scenario_script.rw_intro_strategy
         #method="local_metr"
 
-        yield 5.0
+        yield 5.0 * FIVE_FACTOR
         while True:
             exception = None
             begin = time()
@@ -386,7 +387,7 @@ class BarterCommunity(Community):
 	                    k=0
                             B=csr_matrix.todok(X)
 	                    for i in neig:
-                                 score[k] =B[i,node] #.todense()
+                                 score[k] =max(B[i,node],B[node,i]) #.todense()
 	                         k=k+1 
 
 
@@ -765,7 +766,7 @@ class BarterCommunity(Community):
 
             elif start_create <= now < start_idle and len(winners) < self._signature_count:
                 logger.debug("c%d  record creation phase.  wait %.2f seconds until record creation", int(now / CYCLE_SIZE), CYCLE_SIZE * 0.4 / self._signature_count)
-                yield (CYCLE_SIZE * 0.4 / self._signature_count) * random.random()
+                yield (CYCLE_SIZE * 0.4 / self._signature_count) * pythonrandlib.random()
 
                 # find the best candidate for this cycle
                 score = 0
@@ -947,10 +948,10 @@ class BarterCommunity(Community):
     def do_upload_activity(self, peer_number):
         upload_amount = peer_number * 1024
 
-        # all (this is a shuffled list)
+        # all (this is a pythonrandlib.shuffled list)
         candidates = list(self.dispersy_yield_verified_candidates())
 
-        # only upload to one random candidate
+        # only upload to one pythonrandlib.candidate
         candidates = candidates[:1]
 
         for candidate in candidates:
@@ -1015,7 +1016,7 @@ class BarterCommunity(Community):
 
 
             def prob_choice(bias):
-                randNum = random.random() # in [1,1)
+                randNum = pythonrandlib.random() # in [1,1)
                 if sum(bias)>0:
                      sum_mass = 0.0
                      result = 0
@@ -1035,7 +1036,7 @@ class BarterCommunity(Community):
       
             if list_peer:
                if selection=="random":
-                   index=random.randint(0,(len(list_peer)-1))
+                   index=pythonrandlib.randint(0,(len(list_peer)-1))
                if selection=="scores":
                    peer_scores = [get_score(peer) for peer in list_peer]
                    peer_scores.append(self._scores.get(None, 0.0))
@@ -1108,7 +1109,7 @@ class BarterCommunity(Community):
 
         walk, stumble, intro = [candidate for _, candidate in categories]
         while walk or stumble or intro:
-            r = random.random()
+            r = pythonrandlib.random()
 
             # 13/02/12 Boudewijn: we decrease the 1% chance to contact a bootstrap peer to .5%
             if r <= .4975:  # ~50%
@@ -1119,7 +1120,7 @@ class BarterCommunity(Community):
             elif r <= .995:  # ~50%
                 if stumble or intro:
                     while True:
-                        if random.random() <= .5:
+                        if pythonrandlib.random() <= .5:
                             if stumble:
                                 logger.debug("returning [%2d:%2d:%2d stumble] %s", category_sizes[0] , category_sizes[1], category_sizes[2], stumble)
                                 return stumble
@@ -1136,7 +1137,7 @@ class BarterCommunity(Community):
             #         return candidate
 
         bootstrap_candidates = list(self._iter_bootstrap(once=True))
-        shuffle(bootstrap_candidates)
+        pythonrandlib.shuffle(bootstrap_candidates)
         for candidate in bootstrap_candidates:
             if candidate:
                 logger.debug("returning [%2d:%2d:%2d bootstr] %s", category_sizes[0] , category_sizes[1], category_sizes[2], candidate)
@@ -1168,7 +1169,7 @@ class BarterCommunity(Community):
                 return self._scores.get(member.database_id, 0.0)
         
         def prob_choice(bias):
-                    randNum = random.random() # in [0,1)
+                    randNum = pythonrandlib.random() # in [0,1)
                     if sum(bias)>0:
                         sum_mass = 0.0
                         result = 0
@@ -1193,7 +1194,7 @@ class BarterCommunity(Community):
             logger.info("start of the RW-following")
         
             # with teleportation probability 0.2
-            if random.random() < 0.2:
+            if pythonrandlib.random() < 0.2:
                 self.log("walk-teleport")
                 logger.info("teleportation phase with probability 0.2")
                 pass
@@ -1251,7 +1252,7 @@ class BarterCommunity(Community):
             logger.info("RW failed: back to the bootstrap nodes ")
             # FALLBACK TO BOOTSTRAP NODES
             #bootstrap_candidates = list(self._iter_bootstrap(once=True))
-            #shuffle(bootstrap_candidates)
+            #pythonrandlib.shuffle(bootstrap_candidates)
             #for candidate in bootstrap_candidates:
             #    if candidate:
             #        result = candidate
