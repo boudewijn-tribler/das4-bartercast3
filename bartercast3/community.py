@@ -638,8 +638,25 @@ class BarterCommunity(Community):
         upload_second_to_first = book.upload
         logger.debug("asking %s to sign effort: %s self->peer:%d peer->self:%d", second_member.mid.encode("HEX"), bin(book.effort.long), upload_first_to_second, upload_second_to_first)
         meta = self.get_meta_message(u"barter-record")
+
+        # 18/12/13 Boudewijn: when peer A and B both want to create records at approximately the
+        # same time, and they both claim the same global time, then the code will flag this as
+        # malicious behaviour.  we introduce the following hack to prevent this: assuming
+        # A.public_key < B.public_key, then A may only claim even global time values and B may only
+        # claim uneven global time values.
+        global_time = self.claim_global_time()
+        if self.my_member.public_key < second_member.public_key:
+            # global time must be EVEN
+            while global_time % 2 == 1:
+                global_time = self.claim_global_time()
+
+        else:
+            # global time must be UNEVEN
+            while global_time % 2 == 0:
+                global_time = self.claim_global_time()
+
         record = meta.impl(authentication=([self._my_member, second_member],),
-                           distribution=(self.claim_global_time(),),
+                           distribution=(global_time,),
                            payload=(book.cycle, book.effort, upload_first_to_second, upload_second_to_first,
                                     # the following parameters are used for debugging only
                                     time(), time(), book.download, book.upload, 0, 0),
