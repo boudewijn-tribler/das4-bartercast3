@@ -1,3 +1,4 @@
+import math
 import time
 import sqlite3
 import os
@@ -227,9 +228,9 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
         # multiplier = float(multiplier)
         minutes, seconds = runtime.split(":")
         runtime = int(minutes) * 60 + int(seconds)
-        multiplier = (maxtime - mintime) / runtime
-        peernumber = int(self._kargs["peernumber"]) % maxpeerid
-        startstamp = float(self._kargs["startstamp"])
+        multiplier = math.ceil(1.0 * (maxtime - mintime) / runtime)
+        peernumber = int(self._kargs["peernumber"])
+        startstamp = time.time() #float(self._kargs["startstamp"])
 
         # activity = [((timestamp - mintime - begin) * multiplier + startstamp, int(peer2), int(upload))
         activity = [((timestamp - mintime) * multiplier + startstamp, int(peer2), int(upload))
