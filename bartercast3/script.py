@@ -245,7 +245,7 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
     def _scenario_upload_activity_from_database_helper(self, activity):
         for timestamp, destination_peer, upload_activity in activity:
             delay = max(0.0, timestamp - time.time())
-            logger.debug("will upload %d bytes to peer %d in %.2f seconds", upload_activity, destination_peer, timestamp)
+            logger.warning("will upload %d bytes to peer %d in %.2f seconds", upload_activity, destination_peer, timestamp)
             yield delay
 
             community = self.has_community()

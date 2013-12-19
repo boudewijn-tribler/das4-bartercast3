@@ -52,7 +52,7 @@ class BarterDatabase(Database):
     def __init__(self, dispersy):
         self._dispersy = dispersy
         if self._dispersy.database.file_path == u":memory:":
-            database_filename = u":memory"
+            database_filename = u":memory:"
         else:
             database_filename = path.join(path.dirname(self._dispersy.database.file_path), u"barter.db")
         super(BarterDatabase, self).__init__(database_filename)
