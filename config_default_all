@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # setup for TUD
-if [ "$HOSTNAME" == "fs3"]; then
+if [ "$HOSTNAME" == "fs3" ]; then
     export PYTHONPATH=/home/pbschoon/3rd-party/lib/python2.6/site-packages:/home/pbschoon/3rd-party/lib64/python2.6/site-packages
     export LD_LIBRARY_PATH=/home/pbschoon/3rd-party/lib
 fi
