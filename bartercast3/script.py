@@ -228,7 +228,7 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
         # multiplier = float(multiplier)
         minutes, seconds = runtime.split(":")
         runtime = int(minutes) * 60 + int(seconds)
-        multiplier = math.ceil(1.0 * (maxtime - mintime) / runtime)
+        multiplier = 1.0 * runtime/(maxtime - mintime)
         peernumber = int(self._kargs["peernumber"])
         startstamp = time.time() #float(self._kargs["startstamp"])
 
@@ -237,7 +237,7 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
                     for timestamp, peer2, upload
                     in cur.execute(u"SELECT time, second_peer_number, upload_first_to_second FROM interactions WHERE first_peer_number = ? ORDER BY time",
                                    (peernumber,))]
-        logger.warning("MULTIPLIER:%.2f ACTIVITY:%s", multiplier, [tup[0] - startstamp for tup in activity])
+        #logger.warning("MULTIPLIER:%.2f ACTIVITY:%s", multiplier, [tup[0] - startstamp for tup in activity])
 
         if activity:
             self._dispersy.callback.register(self._scenario_upload_activity_from_database_helper, (activity,))
@@ -247,7 +247,7 @@ class BarterScenarioScript(ScenarioScript, ScenarioExpon, ScenarioShareDatabase)
     def _scenario_upload_activity_from_database_helper(self, activity):
         for timestamp, destination_peer, upload_activity in activity:
             delay = max(0.0, timestamp - time.time())
-            logger.warning("will upload %d bytes to peer %d in %.2f seconds", upload_activity, destination_peer, delay)
+            logger.debug("will upload %d bytes to peer %d in %.2f seconds", upload_activity, destination_peer, delay)
             yield delay
 
             community = self.has_community()

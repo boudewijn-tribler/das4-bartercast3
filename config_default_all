@@ -6,7 +6,7 @@ export LD_LIBRARY_PATH=/home/pbschoon/3rd-party/lib
 
 # amount of time to schedule the DAS4 ("MM:SS" or "HH:MM:SS")
 # the scenario should end before this time is over
-RUNTIME="120:0"
+RUNTIME="130:0"
 # number of DAS4 nodes to claim
 HOSTS=20
 
@@ -83,7 +83,7 @@ ZEROLOGGERCONF="`pwd`/zerologger.conf"
 @118:0 end
 
 # set peer activity
-@3:0 upload_activity_from_database traces/interactions.db 118:0
+@3:0 upload_activity_from_database traces/interactions.db 100:0
 #@0:0 upload_activity 1024 1 4
 #@2:0 upload_activity 2048 1 4 {0-99}
 
