@@ -86,7 +86,7 @@ ZEROLOGGERCONF="`pwd`/zerologger.conf"
 # set peer activity
 #@0:0 upload_activity 1024 1 4
 #@2:0 upload_activity 2048 1 4 {0-99}
-@3:0 upload_activity_from_database traces/interactions.db
+@3:0 upload_activity_from_database traces/interactions.db 100:00
 
 # start peer when it comes online
 #@0:0 expon_churn 300 300
